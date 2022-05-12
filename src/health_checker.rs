@@ -39,7 +39,10 @@ fn sanitize(value: String) -> String {
 }
 
 fn load_port() -> Result<u16, ConfigurationError> {
-    return match env::var("HEALTHCHECK_PORT") {
+    let env_var = env::var("HEALTHCHECK_PORT")
+        .or(env::var("PORT"));
+
+    return match env_var {
         Ok(value) => match value.parse::<u16>() {
             Ok(value) => Ok(value),
             Err(_) => Err(InvalidPort(value)),

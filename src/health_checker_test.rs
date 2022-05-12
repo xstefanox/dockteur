@@ -14,6 +14,29 @@ fn service_port_should_be_read_from_environment_variable() {
 }
 
 #[test]
+fn service_port_should_be_read_from_common_environment_variable() {
+    temp_env::with_var("PORT", Some("8080"), || {
+        let configuration = load_configuration().unwrap();
+
+        assert_eq!(configuration.port, 8080);
+    });
+}
+
+#[test]
+fn port_specific_variable_should_have_precedence_on_common_variable() {
+    temp_env::with_vars(
+        vec![
+            ("HEALTHCHECK_PORT", Some("8081")),
+            ("PORT", Some("8080")),
+        ], || {
+            let configuration = load_configuration().unwrap();
+
+            assert_eq!(configuration.port, 8081);
+        },
+    );
+}
+
+#[test]
 fn service_port_should_fallback_on_default() {
     let configuration = load_configuration().unwrap();
 
@@ -82,7 +105,7 @@ fn timeout_should_be_read_from_environment_variable() {
 }
 
 #[test]
-fn timeout_path_should_fallback_on_default() {
+fn timeout_should_fallback_on_default() {
     let configuration = load_configuration().unwrap();
 
     assert_eq!(configuration.timeout, Duration::from_millis(500));
