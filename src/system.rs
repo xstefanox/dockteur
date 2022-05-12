@@ -1,6 +1,6 @@
 #[cfg(test)]
-#[path = "./ui_test.rs"]
-mod ui_test;
+#[path = "./system_test.rs"]
+mod test;
 
 use std::fmt::{Display, Formatter};
 use ConfigurationError::{InvalidPort, InvalidTimeout};

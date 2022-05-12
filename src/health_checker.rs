@@ -1,9 +1,6 @@
 #[cfg(test)]
 #[path = "./health_checker_test.rs"]
-mod health_checker_test;
-
-#[path = "./ui.rs"]
-pub mod ui;
+mod test;
 
 use std::env;
 use std::time::Duration;
