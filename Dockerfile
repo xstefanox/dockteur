@@ -1,4 +1,4 @@
-FROM rust:1.60-slim AS build
+FROM rust:1.61-slim AS build
 ENV CARGO_HOME=cargo
 RUN apt-get update && apt-get install -y upx-ucl
 USER nobody
