@@ -2,6 +2,7 @@
 #[path = "./health_checker_test.rs"]
 mod test;
 
+use std::collections::HashMap;
 use std::env;
 use std::time::Duration;
 use ureq::OrAnyStatus;
@@ -34,41 +35,43 @@ pub enum State {
     Unhealthy,
 }
 
-fn sanitize(value: String) -> String {
+fn sanitize(value: &String) -> String {
     return value.trim().to_string();
 }
 
-fn load_port() -> Result<u16, ConfigurationError> {
-    let env_var = env::var("HEALTHCHECK_PORT")
-        .or(env::var("PORT"));
+fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, ConfigurationError> {
+    let env_var = vars.get("HEALTHCHECK_PORT")
+        .or(vars.get("PORT"))
+        .cloned();
 
     return match env_var {
-        Ok(value) => match value.parse::<u16>() {
+        None => Ok(default::PORT),
+        Some(value) => match value.parse::<u16>() {
             Ok(value) => Ok(value),
-            Err(_) => Err(InvalidPort(value)),
+            Err(_) => Err(InvalidPort(value.clone())),
         }
-        Err(_) => Ok(default::PORT),
     };
 }
 
-fn load_path() -> Result<String, ConfigurationError> {
-    return match env::var("HEALTHCHECK_PATH") {
-        Ok(mut value) => {
-            value = sanitize(value);
+fn load_path_from(vars: &HashMap<String, String>) -> Result<String, ConfigurationError> {
+    return match vars.get("HEALTHCHECK_PATH") {
+        None => Ok(default::PATH.to_string()),
+        Some(value) => {
+            let value = sanitize(value);
             if value.is_empty() {
                 Ok(default::PATH.to_string())
             } else {
-                Ok(value)
+                Ok(value.clone())
             }
         }
-        Err(_) => Ok(default::PATH.to_string())
-    };
+    }
 }
 
-fn load_timeout() -> Result<Duration, ConfigurationError> {
-    match env::var("HEALTHCHECK_TIMEOUT_MILLIS") {
-        Ok(mut value) => {
-            value = sanitize(value);
+fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, ConfigurationError> {
+    return match vars.get("HEALTHCHECK_TIMEOUT_MILLIS") {
+        None => Ok(default::TIMEOUT),
+        Some(value) => {
+            let value = sanitize(value);
             if value.is_empty() {
                 Ok(default::TIMEOUT)
             } else {
@@ -78,14 +81,14 @@ fn load_timeout() -> Result<Duration, ConfigurationError> {
                 }
             }
         }
-        Err(_) => Ok(default::TIMEOUT),
     }
 }
 
-fn load_configuration() -> Result<Configuration, ConfigurationError> {
-    let port = load_port()?;
-    let path = load_path()?;
-    let timeout = load_timeout()?;
+
+fn load_configuration_from(vars: HashMap<String, String>) -> Result<Configuration, ConfigurationError> {
+    let port = load_port_from(&vars)?;
+    let path = load_path_from(&vars)?;
+    let timeout = load_timeout_from(&vars)?;
     return Ok(Configuration { port, path, timeout });
 }
 
@@ -109,6 +112,7 @@ fn get_health(configuration: &Configuration) -> State {
 }
 
 pub fn run_health_check() -> Result<State, ConfigurationError> {
-    return load_configuration()
+    let vars: HashMap<String, String> = env::vars().collect();
+    return load_configuration_from(vars)
         .map(|configuration| get_health(&configuration));
 }
