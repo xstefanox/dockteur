@@ -60,14 +60,20 @@ fn load_method_from(vars: &HashMap<String, String>) -> Result<String, Configurat
 
 fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, ConfigurationError> {
     let env_var = vars.get("HEALTHCHECK_PORT")
-        .or(vars.get("PORT"))
-        .cloned();
+        .or(vars.get("PORT"));
 
     return match env_var {
         None => Ok(default::PORT),
-        Some(value) => match value.parse::<u16>() {
-            Ok(value) => Ok(value),
-            Err(_) => Err(InvalidPort(value.clone())),
+        Some(value) => {
+            let value = sanitize(value);
+            if value.is_empty() {
+                Ok(default::PORT)
+            } else {
+                match value.parse::<u16>() {
+                    Ok(value) => Ok(value),
+                    Err(_) => Err(InvalidPort(value.clone())),
+                }
+            }
         }
     };
 }

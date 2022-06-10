@@ -109,6 +109,24 @@ fn malformed_service_port_should_not_be_accepted() {
 }
 
 #[test]
+fn empty_service_port_should_fallback_on_default() {
+    let configuration = load_configuration_from(map! {
+        "HEALTHCHECK_PORT" => "",
+    }).unwrap();
+
+    assert_eq!(configuration.port, 80);
+}
+
+#[test]
+fn blank_service_port_should_fallback_on_default() {
+    let configuration = load_configuration_from(map! {
+        "HEALTHCHECK_PORT" => " ",
+    }).unwrap();
+
+    assert_eq!(configuration.port, 80);
+}
+
+#[test]
 fn service_path_should_be_read_from_environment_variable() {
     let configuration = load_configuration_from(map! {
         "HEALTHCHECK_PATH" => "/this/is/the/path",
@@ -120,7 +138,6 @@ fn service_path_should_be_read_from_environment_variable() {
 #[test]
 fn service_path_should_fallback_on_default() {
     let configuration = load_configuration_from(map! {}).unwrap();
-    // let configuration = load_configuration().unwrap();
 
     assert_eq!(configuration.path, "/");
 }
