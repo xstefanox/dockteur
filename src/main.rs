@@ -2,6 +2,7 @@ extern crate core;
 
 use env_logger::Target;
 use log::{error, info, LevelFilter};
+
 use crate::health_checker::{ConfigurationError, run_health_check, State};
 use crate::system::ExitCode;
 
@@ -12,6 +13,7 @@ fn main() {
     env_logger::Builder::from_default_env()
         .target(Target::Stdout)
         .filter_level(LevelFilter::Info)
+        .parse_default_env()
         .init();
 
     let result = run_health_check();

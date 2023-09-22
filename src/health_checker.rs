@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::env;
 use std::time::Duration;
 
+use log::debug;
 use ureq::OrAnyStatus;
 
 use ConfigurationError::{InvalidPort, InvalidTimeout};
@@ -127,6 +128,8 @@ fn get_health(configuration: &Configuration) -> State {
         .call()
         .or_any_status()
         .map(|response| response.status());
+
+    debug!("received status code {:?} from {}", response_status, url);
 
     return match response_status {
         Ok(value) => match value {
