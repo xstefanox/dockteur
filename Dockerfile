@@ -1,4 +1,4 @@
-FROM rust:1.71-slim AS build-default
+FROM --platform=$BUILDPLATFORM rust:1.71-slim AS build-default
 ENV CARGO_HOME=cargo
 RUN apt-get update && apt-get install -y upx-ucl
 WORKDIR /opt/dockteur

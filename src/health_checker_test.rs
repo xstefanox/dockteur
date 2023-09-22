@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use wiremock::{Mock, MockServer, ResponseTemplate};
-use wiremock::matchers::{method, path};
+use http::Uri;
+use stubr::Stubr;
 
-use crate::health_checker::{Configuration, ConfigurationError, get_health, load_configuration_from, State::Healthy};
-use crate::health_checker::State::Unhealthy;
+use crate::health_checker::{Configuration, ConfigurationError, get_health, load_configuration_from};
+use crate::health_checker::State::{Healthy, Unhealthy};
 
 #[macro_export]
 macro_rules! map {
@@ -221,76 +221,47 @@ fn timeout_should_be_trimmed() {
     assert_eq!(configuration.timeout, Duration::from_millis(100));
 }
 
-#[tokio::test]
-async fn a_healthy_service_should_be_reported() {
-    let service_path = "/health";
-    let mock_server = MockServer::start().await;
-
-    Mock::given(method("HEAD"))
-        .and(path(service_path))
-        .respond_with(ResponseTemplate::new(200))
-        .expect(1)
-        .mount(&mock_server)
-        .await;
-
-    let configuration = Configuration {
-        method: "HEAD".into(),
-        port: mock_server.address().port(),
-        path: service_path.to_string(),
-        timeout: Duration::from_millis(100),
-    };
+#[test]
+fn a_healthy_service_should_be_reported() {
+    let server_stub = Stubr::start_blocking("stub/healthy.json");
+    let configuration = client_configuration(&server_stub);
 
     let state = get_health(&configuration);
 
     assert_eq!(Healthy, state);
 }
 
-#[tokio::test]
-async fn an_unhealthy_service_should_be_reported() {
-    let service_path = "/health";
-    let mock_server = MockServer::start().await;
-
-    Mock::given(method("GET"))
-        .and(path(service_path))
-        .respond_with(ResponseTemplate::new(500))
-        .expect(1)
-        .mount(&mock_server)
-        .await;
-
-    let configuration = Configuration {
-        method: "GET".into(),
-        port: mock_server.address().port(),
-        path: service_path.to_string(),
-        timeout: Duration::from_millis(100),
-    };
+#[test]
+fn an_unhealthy_service_should_be_reported() {
+    let server_stub = Stubr::start_blocking("stub/unhealthy.json");
+    let configuration = client_configuration(&server_stub);
 
     let state = get_health(&configuration);
 
     assert_eq!(Unhealthy, state);
 }
 
-#[tokio::test]
-async fn service_responding_slowly_should_be_reported_as_unhealthy() {
-    let service_path = "/health";
-    let mock_server = MockServer::start().await;
-
-    Mock::given(method("GET"))
-        .and(path(service_path))
-        .respond_with(ResponseTemplate::new(200).set_delay(Duration::from_millis(10)))
-        .expect(1)
-        .mount(&mock_server)
-        .await;
-
-    let configuration = Configuration {
-        method: "GET".into(),
-        port: mock_server.address().port(),
-        path: service_path.to_string(),
-        timeout: Duration::from_millis(1),
-    };
+#[test]
+fn service_responding_slowly_should_be_reported_as_unhealthy() {
+    let server_stub = Stubr::start_blocking("stub/unhealthy.json");
+    let configuration = client_configuration_with_timeout(&server_stub, 10);
 
     let state = get_health(&configuration);
 
     assert_eq!(Unhealthy, state);
+}
+
+fn client_configuration(server_stub: &Stubr) -> Configuration {
+    client_configuration_with_timeout(&server_stub, 100)
+}
+
+fn client_configuration_with_timeout(server_stub: &Stubr, timeout: u64) -> Configuration {
+    Configuration {
+        method: "GET".into(),
+        port: server_stub.uri().parse::<Uri>().unwrap().port().map(|port| port.as_u16()).unwrap_or(80),
+        path: "/health".to_string(),
+        timeout: Duration::from_millis(timeout),
+    }
 }
 
 #[test]
