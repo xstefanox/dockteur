@@ -3,7 +3,7 @@ use std::time::Duration;
 use http::Uri;
 use stubr::Stubr;
 
-use crate::health_checker::{Configuration, ConfigurationError, get_health, load_configuration_from};
+use crate::health_checker::{Configuration, ConfigurationError, get_health, load_configuration_from, sanitize};
 use crate::health_checker::State::{Healthy, Unhealthy};
 
 #[macro_export]
@@ -276,4 +276,25 @@ fn on_network_error_the_service_should_be_reported_as_unhealthy() {
     let state = get_health(&configuration);
 
     assert_eq!(Unhealthy, state);
+}
+
+#[test]
+fn non_empty_string_sanitization() {
+    let result = sanitize(&"test".to_string());
+
+    assert_eq!(Some("test".to_string()), result)
+}
+
+#[test]
+fn empty_string_sanitization() {
+    let result = sanitize(&"".to_string());
+
+    assert_eq!(None, result)
+}
+
+#[test]
+fn blank_string_sanitization() {
+    let result = sanitize(&" ".to_string());
+
+    assert_eq!(None, result)
 }

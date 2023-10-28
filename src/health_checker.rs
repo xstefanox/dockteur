@@ -41,19 +41,18 @@ pub enum State {
     Unhealthy,
 }
 
-fn sanitize(value: &String) -> String {
-    return value.trim().to_string();
+fn sanitize(value: &String) -> Option<String> {
+    return Some(value.trim().to_string())
+        .filter(|s| !s.is_empty());
 }
 
 fn load_method_from(vars: &HashMap<String, String>) -> Result<String, ConfigurationError> {
     return match vars.get("HEALTHCHECK_METHOD") {
         None => Ok(default::METHOD.into()),
         Some(value) => {
-            let value = sanitize(value);
-            if value.is_empty() {
-                Ok(default::METHOD.to_string())
-            } else {
-                Ok(value.clone())
+            match sanitize(value) {
+                None => Ok(default::METHOD.to_string()),
+                Some(value) => Ok(value.clone()),
             }
         }
     };
@@ -66,11 +65,9 @@ fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, ConfigurationEr
     return match env_var {
         None => Ok(default::PORT),
         Some(value) => {
-            let value = sanitize(value);
-            if value.is_empty() {
-                Ok(default::PORT)
-            } else {
-                match value.parse::<u16>() {
+            match sanitize(value) {
+                None => Ok(default::PORT),
+                Some(value) => match value.parse::<u16>() {
                     Ok(value) => Ok(value),
                     Err(_) => Err(InvalidPort(value.clone())),
                 }
@@ -83,11 +80,9 @@ fn load_path_from(vars: &HashMap<String, String>) -> Result<String, Configuratio
     return match vars.get("HEALTHCHECK_PATH") {
         None => Ok(default::PATH.to_string()),
         Some(value) => {
-            let value = sanitize(value);
-            if value.is_empty() {
-                Ok(default::PATH.to_string())
-            } else {
-                Ok(value.clone())
+            match sanitize(value) {
+                None => Ok(default::PATH.to_string()),
+                Some(value) => Ok(value.clone())
             }
         }
     };
@@ -97,11 +92,9 @@ fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, Configu
     return match vars.get("HEALTHCHECK_TIMEOUT_MILLIS") {
         None => Ok(default::TIMEOUT),
         Some(value) => {
-            let value = sanitize(value);
-            if value.is_empty() {
-                Ok(default::TIMEOUT)
-            } else {
-                match value.parse::<u64>() {
+            match sanitize(value) {
+                None => Ok(default::TIMEOUT),
+                Some(value) => match value.parse::<u64>() {
                     Ok(value) => Ok(Duration::from_millis(value)),
                     Err(_) => Err(InvalidTimeout(value)),
                 }
