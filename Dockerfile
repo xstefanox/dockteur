@@ -1,6 +1,6 @@
-FROM --platform=$BUILDPLATFORM rust:1.71-slim AS build-default
-ENV CARGO_HOME=cargo
+FROM --platform=$BUILDPLATFORM rust:1.76-slim-bullseye AS build-default
 RUN apt-get update && apt-get install -y upx-ucl
+USER nobody
 WORKDIR /opt/dockteur
 COPY --chown=nobody . ./
 RUN cargo build
@@ -8,9 +8,9 @@ RUN cargo test
 RUN cargo build --release
 RUN upx --best --lzma target/release/dockteur
 
-FROM --platform=$BUILDPLATFORM rust:1.71-alpine3.18 AS build-alpine
-ENV CARGO_HOME=cargo
+FROM --platform=$BUILDPLATFORM rust:1.76-alpine3.19 AS build-alpine
 RUN apk add upx musl-dev
+USER nobody
 WORKDIR /opt/dockteur
 COPY --chown=nobody . ./
 RUN cargo build
