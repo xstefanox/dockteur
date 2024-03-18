@@ -243,8 +243,8 @@ fn an_unhealthy_service_should_be_reported() {
 
 #[test]
 fn service_responding_slowly_should_be_reported_as_unhealthy() {
-    let server_stub = Stubr::start_blocking("stub/unhealthy.json");
-    let configuration = client_configuration_with_timeout(&server_stub, 10);
+    let server_stub = Stubr::start_blocking("stub/slow.json");
+    let configuration = client_configuration_with_timeout(&server_stub, 1);
 
     let state = get_health(&configuration);
 
