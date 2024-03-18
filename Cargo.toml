@@ -9,8 +9,9 @@ log = "^0.4.0"
 ureq = { version = "^2.7.0", default-features = false }
 
 [dev-dependencies]
-http = "^0.2.0"
-stubr = "^0.6.0"
+http = "1.1.0"
+tokio = { version = "1.36.0", features = ["macros"] }
+wiremock = "0.6.0"
 
 [profile.release]
 opt-level = 'z'

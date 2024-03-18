@@ -1,7 +1,8 @@
 use std::time::Duration;
 
-use http::Uri;
-use stubr::Stubr;
+use tokio;
+use wiremock::{Mock, MockServer, ResponseTemplate};
+use wiremock::matchers::{method, path};
 
 use crate::health_checker::{Configuration, ConfigurationError, get_health, load_configuration_from, sanitize};
 use crate::health_checker::State::{Healthy, Unhealthy};
@@ -222,57 +223,42 @@ fn timeout_should_be_trimmed() {
 }
 
 #[cfg(not(all(target_arch = "aarch64", target_env = "musl")))]
-#[test]
-fn a_healthy_service_should_be_reported() {
-    let server_stub = Stubr::start_blocking("stub/healthy.json");
-    let configuration = client_configuration(&server_stub);
+#[tokio::test]
+async fn a_healthy_service_should_be_reported() {
+    let mock_server = MockServer::start().await;
+    let configuration = client_configuration(mock_server.address().port());
+    mock_server_health(&mock_server, 200).await;
 
     let state = get_health(&configuration);
 
     assert_eq!(Healthy, state);
 }
 
-#[test]
-fn an_unhealthy_service_should_be_reported() {
-    let server_stub = Stubr::start_blocking("stub/unhealthy.json");
-    let configuration = client_configuration(&server_stub);
+#[tokio::test]
+async fn an_unhealthy_service_should_be_reported() {
+    let mock_server = MockServer::start().await;
+    let configuration = client_configuration(mock_server.address().port());
+    mock_server_health(&mock_server, 500).await;
 
     let state = get_health(&configuration);
 
     assert_eq!(Unhealthy, state);
 }
 
-#[test]
-fn service_responding_slowly_should_be_reported_as_unhealthy() {
-    let server_stub = Stubr::start_blocking("stub/slow.json");
-    let configuration = client_configuration_with_timeout(&server_stub, 1);
+#[tokio::test]
+async fn service_responding_slowly_should_be_reported_as_unhealthy() {
+    let mock_server = MockServer::start().await;
+    let configuration = client_configuration_with_timeout(mock_server.address().port(), 1);
+    mock_server_health_with_delay(&mock_server, 500, 1_000).await;
 
     let state = get_health(&configuration);
 
     assert_eq!(Unhealthy, state);
-}
-
-fn client_configuration(server_stub: &Stubr) -> Configuration {
-    client_configuration_with_timeout(&server_stub, 100)
-}
-
-fn client_configuration_with_timeout(server_stub: &Stubr, timeout: u64) -> Configuration {
-    Configuration {
-        method: "GET".into(),
-        port: server_stub.uri().parse::<Uri>().unwrap().port().map(|port| port.as_u16()).unwrap_or(80),
-        path: "/health".to_string(),
-        timeout: Duration::from_millis(timeout),
-    }
 }
 
 #[test]
 fn on_network_error_the_service_should_be_reported_as_unhealthy() {
-    let configuration = Configuration {
-        method: "GET".into(),
-        port: 8080,
-        path: "/health".to_string(),
-        timeout: Duration::from_millis(1),
-    };
+    let configuration = client_configuration(8080);
 
     let state = get_health(&configuration);
 
@@ -298,4 +284,33 @@ fn blank_string_sanitization() {
     let result = sanitize(&" ".to_string());
 
     assert_eq!(None, result)
+}
+
+async fn mock_server_health(mock_server: &MockServer, status_code: u16) {
+    Mock::given(method("GET"))
+        .and(path("/health"))
+        .respond_with(ResponseTemplate::new(status_code))
+        .mount(&mock_server)
+        .await
+}
+
+async fn mock_server_health_with_delay(mock_server: &MockServer, status_code: u16, delay_millis: u64) {
+    Mock::given(method("GET"))
+        .and(path("/health"))
+        .respond_with(ResponseTemplate::new(status_code).set_delay(Duration::from_millis(delay_millis)))
+        .mount(&mock_server)
+        .await
+}
+
+fn client_configuration(port: u16) -> Configuration {
+    client_configuration_with_timeout(port, 100)
+}
+
+fn client_configuration_with_timeout(port: u16, timeout: u64) -> Configuration {
+    Configuration {
+        method: "GET".into(),
+        port,
+        path: "/health".to_string(),
+        timeout: Duration::from_millis(timeout),
+    }
 }
