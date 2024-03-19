@@ -8,7 +8,7 @@ RUN cargo test
 RUN cargo build --release
 RUN upx --best --lzma target/release/dockteur
 
-FROM rust:1.71-alpine3.18 AS build-alpine
+FROM --platform=$BUILDPLATFORM rust:1.71-alpine3.18 AS build-alpine
 ENV CARGO_HOME=cargo
 RUN apk add upx musl-dev
 WORKDIR /opt/dockteur
