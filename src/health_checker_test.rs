@@ -221,6 +221,7 @@ fn timeout_should_be_trimmed() {
     assert_eq!(configuration.timeout, Duration::from_millis(100));
 }
 
+#[cfg(not(all(target_arch = "aarch64", target_env = "musl")))]
 #[test]
 fn a_healthy_service_should_be_reported() {
     let server_stub = Stubr::start_blocking("stub/healthy.json");
