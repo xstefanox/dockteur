@@ -4,7 +4,7 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-env_logger = { version = "^0.10.0", default-features = false }
+env_logger = { version = "^0.11.0", default-features = false }
 log = "^0.4.0"
 ureq = { version = "^2.7.0", default-features = false }
 
