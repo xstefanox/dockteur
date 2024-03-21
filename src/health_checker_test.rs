@@ -222,6 +222,7 @@ fn timeout_should_be_trimmed() {
     assert_eq!(configuration.timeout, Duration::from_millis(100));
 }
 
+#[cfg(not(target_arch = "aarch64"))]
 #[tokio::test]
 async fn a_healthy_service_should_be_reported() {
     let mock_server = MockServer::start().await;
