@@ -8,6 +8,8 @@ use ureq::OrAnyStatus;
 
 use ConfigurationError::{InvalidPort, InvalidTimeout};
 
+use crate::health_checker::ConfigurationError::InvalidStatusCode;
+
 #[cfg(test)]
 #[path = "./health_checker_test.rs"]
 mod test;
@@ -19,6 +21,7 @@ mod default {
     pub(super) const PORT: u16 = 80;
     pub(super) const PATH: &str = "/";
     pub(super) const TIMEOUT: Duration = Duration::from_millis(500);
+    pub(super) const STATUS_CODE: u16 = 200;
 }
 
 #[derive(Debug)]
@@ -27,12 +30,14 @@ struct Configuration {
     port: u16,
     path: String,
     timeout: Duration,
+    status_code: u16,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum ConfigurationError {
     InvalidPort(String),
     InvalidTimeout(String),
+    InvalidStatusCode(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -103,12 +108,28 @@ fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, Configu
     };
 }
 
+fn load_status_code_from(vars: &HashMap<String, String>) -> Result<u16, ConfigurationError> {
+    return match vars.get("HEALTHCHECK_STATUS_CODE") {
+        None => Ok(default::STATUS_CODE),
+        Some(value) => {
+            match sanitize(value) {
+                None => Ok(default::STATUS_CODE),
+                Some(value) => match value.parse::<u16>() {
+                    Ok(value) => Ok(value),
+                    Err(_) => Err(InvalidStatusCode(value)),
+                }
+            }
+        }
+    };
+}
+
 fn load_configuration_from(vars: HashMap<String, String>) -> Result<Configuration, ConfigurationError> {
     let method = load_method_from(&vars)?;
     let port = load_port_from(&vars)?;
     let path = load_path_from(&vars)?;
     let timeout = load_timeout_from(&vars)?;
-    return Ok(Configuration { method, port, path, timeout });
+    let status_code = load_status_code_from(&vars)?;
+    return Ok(Configuration { method, port, path, timeout, status_code });
 }
 
 fn get_health(configuration: &Configuration) -> State {
@@ -122,12 +143,15 @@ fn get_health(configuration: &Configuration) -> State {
         .or_any_status()
         .map(|response| response.status());
 
-    debug!("received status code {:?} from {}", response_status, url);
+    debug!("received result from {}: {:?}", url, response_status);
 
     return match response_status {
-        Ok(value) => match value {
-            200 => State::Healthy,
-            _ => State::Unhealthy,
+        Ok(value) => {
+            if value == configuration.status_code {
+                State::Healthy
+            } else {
+                State::Unhealthy
+            }
         }
         Err(_) => State::Unhealthy,
     };

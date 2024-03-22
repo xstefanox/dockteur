@@ -3,7 +3,7 @@
 mod test;
 
 use std::fmt::{Display, Formatter};
-use ConfigurationError::{InvalidPort, InvalidTimeout};
+use ConfigurationError::{InvalidPort, InvalidStatusCode, InvalidTimeout};
 use State::{Healthy, Unhealthy};
 use crate::{ConfigurationError, State};
 
@@ -19,8 +19,9 @@ impl Display for State {
 impl Display for ConfigurationError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            InvalidPort(port) => write!(f, "invalid port '{}'", port),
-            InvalidTimeout(timeout) => write!(f, "invalid timeout '{}'", timeout),
+            InvalidPort(value) => write!(f, "invalid port '{}'", value),
+            InvalidTimeout(value) => write!(f, "invalid timeout '{}'", value),
+            InvalidStatusCode(value) => write!(f, "invalid status code '{}'", value),
         }
     }
 }

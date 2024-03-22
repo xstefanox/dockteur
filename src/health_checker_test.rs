@@ -4,8 +4,9 @@ use tokio;
 use wiremock::{Mock, MockServer, ResponseTemplate};
 use wiremock::matchers::{method, path};
 
-use crate::health_checker::{Configuration, ConfigurationError, get_health, load_configuration_from, sanitize};
+use crate::health_checker::{Configuration, ConfigurationError, default, get_health, load_configuration_from, sanitize};
 use crate::health_checker::State::{Healthy, Unhealthy};
+use rand::Rng;
 
 #[macro_export]
 macro_rules! map {
@@ -63,6 +64,49 @@ fn service_method_should_be_trimmed() {
     }).unwrap();
 
     assert_eq!(configuration.method, "POST");
+}
+
+#[test]
+fn expected_status_code_should_be_read_from_environment_variable() {
+    let configuration = load_configuration_from(map! {
+        "HEALTHCHECK_STATUS_CODE" => "201",
+    }).unwrap();
+
+    assert_eq!(configuration.status_code, 201);
+}
+
+#[test]
+fn expected_status_code_should_fallback_on_default() {
+    let configuration = load_configuration_from(map! {}).unwrap();
+
+    assert_eq!(configuration.status_code, 200);
+}
+
+#[test]
+fn malformed_status_code_should_not_be_accepted() {
+    let result = load_configuration_from(map! {
+        "HEALTHCHECK_STATUS_CODE" => "MALFORMED",
+    }).unwrap_err();
+
+    assert_eq!(result, ConfigurationError::InvalidStatusCode("MALFORMED".to_string()));
+}
+
+#[test]
+fn empty_status_code_should_fallback_on_default() {
+    let configuration = load_configuration_from(map! {
+        "HEALTHCHECK_STATUS_CODE" => "",
+    }).unwrap();
+
+    assert_eq!(configuration.status_code, 200);
+}
+
+#[test]
+fn blank_status_code_should_fallback_on_default() {
+    let configuration = load_configuration_from(map! {
+        "HEALTHCHECK_STATUS_CODE" => " ",
+    }).unwrap();
+
+    assert_eq!(configuration.status_code, 200);
 }
 
 #[test]
@@ -226,8 +270,9 @@ fn timeout_should_be_trimmed() {
 #[tokio::test]
 async fn a_healthy_service_should_be_reported() {
     let mock_server = MockServer::start().await;
-    let configuration = client_configuration(mock_server.address().port());
-    mock_server_health(&mock_server, 200).await;
+    let status_code = a_status_code();
+    let configuration = client_configuration_with_status_code(mock_server.address().port(), status_code);
+    mock_server_health(&mock_server, status_code).await;
 
     let state = get_health(&configuration);
 
@@ -306,11 +351,27 @@ fn client_configuration(port: u16) -> Configuration {
     client_configuration_with_timeout(port, 100)
 }
 
+fn client_configuration_with_status_code(port: u16, status_code: u16) -> Configuration {
+    Configuration {
+        method: "GET".into(),
+        port,
+        path: "/health".to_string(),
+        timeout: default::TIMEOUT,
+        status_code,
+    }
+}
+
 fn client_configuration_with_timeout(port: u16, timeout: u64) -> Configuration {
     Configuration {
         method: "GET".into(),
         port,
         path: "/health".to_string(),
         timeout: Duration::from_millis(timeout),
+        status_code: 200,
     }
+}
+
+fn a_status_code() -> u16 {
+    let mut rng = rand::thread_rng();
+    return rng.gen_range(200..226);
 }
