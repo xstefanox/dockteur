@@ -1,13 +1,16 @@
 extern crate core;
 
 use env_logger::Target;
-use log::{error, info, LevelFilter};
+use log::LevelFilter;
 
 use crate::health_checker::{ConfigurationError, run_health_check, State};
 use crate::system::ExitCode;
 
 mod health_checker;
 mod system;
+
+#[cfg(test)]
+mod test_logger;
 
 fn main() {
     env_logger::Builder::from_default_env()
@@ -17,11 +20,6 @@ fn main() {
         .init();
 
     let result = run_health_check();
-
-    match &result {
-        Ok(state) => info!("state {}", state),
-        Err(error) => error!("{}", error),
-    };
 
     std::process::exit(result.to_exit_code());
 }

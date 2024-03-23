@@ -6,6 +6,7 @@ use std::fmt::{Display, Formatter};
 use ConfigurationError::{InvalidPort, InvalidStatusCode, InvalidTimeout};
 use State::{Healthy, Unhealthy};
 use crate::{ConfigurationError, State};
+use crate::health_checker::HeathcheckFailure;
 
 impl Display for State {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -30,7 +31,7 @@ pub trait ExitCode {
     fn to_exit_code(&self) -> i32;
 }
 
-impl ExitCode for Result<State, ConfigurationError> {
+impl ExitCode for Result<State, HeathcheckFailure> {
     fn to_exit_code(&self) -> i32 {
         match self {
             Ok(state) => match state {

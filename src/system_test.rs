@@ -1,6 +1,6 @@
-use crate::State::{Healthy, Unhealthy};
 use crate::ExitCode;
 use crate::health_checker::ConfigurationError::{InvalidPort, InvalidStatusCode, InvalidTimeout};
+use crate::State::{Healthy, Unhealthy};
 
 #[test]
 fn healthy_state_should_be_converted_to_process_exit_status() {

@@ -1,12 +1,12 @@
 use std::time::Duration;
 
+use rand::Rng;
 use tokio;
 use wiremock::{Mock, MockServer, ResponseTemplate};
 use wiremock::matchers::{method, path};
 
 use crate::health_checker::{Configuration, ConfigurationError, default, get_health, load_configuration_from, sanitize};
 use crate::health_checker::State::{Healthy, Unhealthy};
-use rand::Rng;
 
 #[macro_export]
 macro_rules! map {
@@ -23,62 +23,93 @@ macro_rules! map {
     };
 }
 
+#[macro_export]
+macro_rules! assert_ok {
+    ( $x:expr ) => {
+        match $x {
+            std::result::Result::Ok(v) => v,
+            std::result::Result::Err(e) => {
+                panic!("Expected: Ok(_)\nActual: Err({:?})", e);
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! assert_err {
+    ( $x:expr ) => {
+        match $x {
+            std::result::Result::Err(v) => v,
+            std::result::Result::Ok(e) => {
+                panic!("Expected: Err(_)\nActual: Ok({:?})", e);
+            }
+        }
+    };
+}
+
 #[test]
 fn service_method_should_be_read_from_environment_variable() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_METHOD" => "HEAD",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.method, "HEAD");
 }
 
 #[test]
 fn service_method_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {}).unwrap();
+    let result = load_configuration_from(map! {});
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.method, "GET");
 }
 
 #[test]
 fn empty_service_method_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_METHOD" => "",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.method, "GET");
 }
 
 #[test]
 fn blank_service_method_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_METHOD" => " ",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.method, "GET");
 }
 
 #[test]
 fn service_method_should_be_trimmed() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_METHOD" => " POST ",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.method, "POST");
 }
 
 #[test]
 fn expected_status_code_should_be_read_from_environment_variable() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_STATUS_CODE" => "201",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.status_code, 201);
 }
 
 #[test]
 fn expected_status_code_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {}).unwrap();
+    let result = load_configuration_from(map! {});
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.status_code, 200);
 }
 
@@ -86,61 +117,68 @@ fn expected_status_code_should_fallback_on_default() {
 fn malformed_status_code_should_not_be_accepted() {
     let result = load_configuration_from(map! {
         "HEALTHCHECK_STATUS_CODE" => "MALFORMED",
-    }).unwrap_err();
+    });
 
-    assert_eq!(result, ConfigurationError::InvalidStatusCode("MALFORMED".to_string()));
+    let err = assert_err!(result);
+    assert_eq!(err, ConfigurationError::InvalidStatusCode("MALFORMED".to_string()));
 }
 
 #[test]
 fn empty_status_code_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_STATUS_CODE" => "",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.status_code, 200);
 }
 
 #[test]
 fn blank_status_code_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_STATUS_CODE" => " ",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.status_code, 200);
 }
 
 #[test]
 fn service_port_should_be_read_from_environment_variable() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_PORT" => "8080",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.port, 8080);
 }
 
 #[test]
 fn service_port_should_be_read_from_common_environment_variable() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "PORT" => "8080",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.port, 8080);
 }
 
 #[test]
 fn port_specific_variable_should_have_precedence_on_common_variable() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_PORT" => "8081",
         "PORT" => "8080",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.port, 8081);
 }
 
 #[test]
 fn service_port_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {}).unwrap();
+    let result = load_configuration_from(map! {});
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.port, 80);
 }
 
@@ -148,85 +186,95 @@ fn service_port_should_fallback_on_default() {
 fn malformed_service_port_should_not_be_accepted() {
     let result = load_configuration_from(map! {
         "PORT" => "MALFORMED",
-    }).unwrap_err();
+    });
 
-    assert_eq!(result, ConfigurationError::InvalidPort("MALFORMED".to_string()));
+    let configuration = assert_err!(result);
+    assert_eq!(configuration, ConfigurationError::InvalidPort("MALFORMED".to_string()));
 }
 
 #[test]
 fn empty_service_port_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_PORT" => "",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.port, 80);
 }
 
 #[test]
 fn blank_service_port_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_PORT" => " ",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.port, 80);
 }
 
 #[test]
 fn service_path_should_be_read_from_environment_variable() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_PATH" => "/this/is/the/path",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.path, "/this/is/the/path");
 }
 
 #[test]
 fn service_path_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {}).unwrap();
+    let result = load_configuration_from(map! {});
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.path, "/");
 }
 
 #[test]
 fn empty_service_path_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_PATH" => "",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.path, "/");
 }
 
 #[test]
 fn blank_service_path_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_PATH" => " ",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.path, "/");
 }
 
 #[test]
 fn service_path_should_be_trimmed() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_PATH" => " /this/is/the/path ",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.path, "/this/is/the/path");
 }
 
 #[test]
 fn timeout_should_be_read_from_environment_variable() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_TIMEOUT_MILLIS" => "100",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.timeout, Duration::from_millis(100));
 }
 
 #[test]
 fn timeout_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {}).unwrap();
+    let result = load_configuration_from(map! {});
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.timeout, Duration::from_millis(500));
 }
 
@@ -234,35 +282,39 @@ fn timeout_should_fallback_on_default() {
 fn malformed_timeout_port_should_not_be_accepted() {
     let result = load_configuration_from(map! {
         "HEALTHCHECK_TIMEOUT_MILLIS" => "MALFORMED",
-    }).unwrap_err();
+    });
 
-    assert_eq!(result, ConfigurationError::InvalidTimeout("MALFORMED".to_string()));
+    let configuration = assert_err!(result);
+    assert_eq!(configuration, ConfigurationError::InvalidTimeout("MALFORMED".to_string()));
 }
 
 #[test]
 fn empty_timeout_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_TIMEOUT_MILLIS" => "",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.timeout, Duration::from_millis(500));
 }
 
 #[test]
 fn blank_timeout_should_fallback_on_default() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_TIMEOUT_MILLIS" => " ",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.timeout, Duration::from_millis(500));
 }
 
 #[test]
 fn timeout_should_be_trimmed() {
-    let configuration = load_configuration_from(map! {
+    let result = load_configuration_from(map! {
         "HEALTHCHECK_TIMEOUT_MILLIS" => " 100 ",
-    }).unwrap();
+    });
 
+    let configuration = assert_ok!(result);
     assert_eq!(configuration.timeout, Duration::from_millis(100));
 }
 
@@ -274,8 +326,9 @@ async fn a_healthy_service_should_be_reported() {
     let configuration = client_configuration_with_status_code(mock_server.address().port(), status_code);
     mock_server_health(&mock_server, status_code).await;
 
-    let state = get_health(&configuration);
+    let result = get_health(&configuration);
 
+    let state = assert_ok!(result);
     assert_eq!(Healthy, state);
 }
 
@@ -285,8 +338,9 @@ async fn an_unhealthy_service_should_be_reported() {
     let configuration = client_configuration(mock_server.address().port());
     mock_server_health(&mock_server, 500).await;
 
-    let state = get_health(&configuration);
+    let result = get_health(&configuration);
 
+    let state = assert_ok!(result);
     assert_eq!(Unhealthy, state);
 }
 
@@ -296,18 +350,20 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
     let configuration = client_configuration_with_timeout(mock_server.address().port(), 1);
     mock_server_health_with_delay(&mock_server, 500, 1_000).await;
 
-    let state = get_health(&configuration);
+    let result = get_health(&configuration);
 
+    let state = assert_ok!(result);
     assert_eq!(Unhealthy, state);
 }
 
 #[test]
-fn on_network_error_the_service_should_be_reported_as_unhealthy() {
+fn on_network_error_the_service_should_be_reported_as_error() {
     let configuration = client_configuration(8080);
 
-    let state = get_health(&configuration);
+    let result = get_health(&configuration);
 
-    assert_eq!(Unhealthy, state);
+    let err = assert_err!(result);
+    assert!(err.message.starts_with("network error"))
 }
 
 #[test]

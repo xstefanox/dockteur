@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::env;
 use std::time::Duration;
 
-use log::debug;
+use log::{debug, error, info};
 use ureq::OrAnyStatus;
 
 use ConfigurationError::{InvalidPort, InvalidTimeout};
@@ -44,6 +44,16 @@ pub enum ConfigurationError {
 pub enum State {
     Healthy,
     Unhealthy,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct NetworkError {
+    message: String,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct HeathcheckFailure {
+    message: String,
 }
 
 fn sanitize(value: &String) -> Option<String> {
@@ -132,33 +142,58 @@ fn load_configuration_from(vars: HashMap<String, String>) -> Result<Configuratio
     return Ok(Configuration { method, port, path, timeout, status_code });
 }
 
-fn get_health(configuration: &Configuration) -> State {
+fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
     let url = format!("http://localhost:{}{}", configuration.port, configuration.path);
     let agent = ureq::AgentBuilder::new()
         .timeout_read(configuration.timeout)
         .build();
-    let response_status = agent
+    let response = agent
         .request(configuration.method.borrow(), &*url)
         .call()
-        .or_any_status()
-        .map(|response| response.status());
+        .or_any_status();
 
-    debug!("received result from {}: {:?}", url, response_status);
+    debug!("received result from {}: {:?}", url, response);
 
-    return match response_status {
+    let result = match response {
         Ok(value) => {
-            if value == configuration.status_code {
-                State::Healthy
+            if value.status() == configuration.status_code {
+                Ok(State::Healthy)
             } else {
-                State::Unhealthy
+                Ok(State::Unhealthy)
             }
         }
-        Err(_) => State::Unhealthy,
+        Err(e) => {
+            if e.to_string().contains("timed out reading response") {
+                Ok(State::Unhealthy)
+            } else {
+                Err(NetworkError {
+                    message: format!("network error: {}", e)
+                })
+            }
+        }
     };
+
+    match &result {
+        Ok(state) => info!("state {}", state),
+        Err(failure) => error!("{}", failure.message),
+    }
+
+    return result;
 }
 
-pub fn run_health_check() -> Result<State, ConfigurationError> {
+pub fn run_health_check() -> Result<State, HeathcheckFailure> {
     let vars: HashMap<String, String> = env::vars().collect();
-    return load_configuration_from(vars)
-        .map(|configuration| get_health(&configuration));
+
+    let configuration = load_configuration_from(vars)
+        .map_err(|err| {
+            HeathcheckFailure {
+                message: err.to_string(),
+            }
+        })?;
+
+    return get_health(&configuration).map_err(|err| {
+        HeathcheckFailure {
+            message: err.message,
+        }
+    });
 }
