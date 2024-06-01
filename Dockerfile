@@ -1,4 +1,4 @@
-FROM rust:1.76-slim-bullseye AS build-default
+FROM rust:1.78-slim-bullseye AS build-default
 RUN apt-get update && apt-get install -y upx-ucl
 USER nobody
 WORKDIR /opt/dockteur
@@ -8,7 +8,7 @@ RUN cargo test
 RUN cargo build --release
 RUN upx --best --lzma target/release/dockteur
 
-FROM rust:1.76-alpine3.19 AS build-alpine
+FROM rust:1.78-alpine3.19 AS build-alpine
 RUN apk add upx musl-dev
 USER nobody
 WORKDIR /opt/dockteur
