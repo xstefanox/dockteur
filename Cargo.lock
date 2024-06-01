@@ -81,6 +81,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ba43ea6f343b788c8764558649e08df62f86c6ef251fdaeb1ffd010a9ae50a2"
 
 [[package]]
+name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
 name = "bytes"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -778,11 +784,11 @@ dependencies = [
 
 [[package]]
 name = "ureq"
-version = "2.9.6"
+version = "2.9.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11f214ce18d8b2cbe84ed3aa6486ed3f5b285cf8d8fbdbce9f3f767a724adc35"
+checksum = "d11a831e3c0b56e438a28308e7c810799e3c118417f342d30ecec080105395cd"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "log",
  "once_cell",
  "url",
@@ -954,7 +960,7 @@ checksum = "ec874e1eef0df2dcac546057fe5e29186f09c378181cd7b635b4b7bcc98e9d81"
 dependencies = [
  "assert-json-diff",
  "async-trait",
- "base64",
+ "base64 0.21.4",
  "deadpool",
  "futures",
  "http",
