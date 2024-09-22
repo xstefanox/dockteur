@@ -1,5 +1,5 @@
 use crate::ExitCode;
-use crate::health_checker::ConfigurationError::{InvalidPort, InvalidStatusCode, InvalidTimeout};
+use crate::health_checker::InvalidConfiguration;
 use crate::State::{Healthy, Unhealthy};
 
 #[test]
@@ -18,7 +18,7 @@ fn unhealthy_state_should_be_converted_to_process_exit_status() {
 
 #[test]
 fn invalid_port_message() {
-    let err = InvalidPort(String::from("MALFORMED"));
+    let err = InvalidConfiguration::Port(String::from("MALFORMED"));
 
     let result = format!("{}", err);
 
@@ -27,7 +27,7 @@ fn invalid_port_message() {
 
 #[test]
 fn invalid_timeout_message() {
-    let err = InvalidTimeout(String::from("MALFORMED"));
+    let err = InvalidConfiguration::Timeout(String::from("MALFORMED"));
 
     let result = format!("{}", err);
 
@@ -36,7 +36,7 @@ fn invalid_timeout_message() {
 
 #[test]
 fn invalid_status_code_message() {
-    let err = InvalidStatusCode(String::from("MALFORMED"));
+    let err = InvalidConfiguration::StatusCode(String::from("MALFORMED"));
 
     let result = format!("{}", err);
 

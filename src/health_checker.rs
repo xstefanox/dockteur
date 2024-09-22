@@ -6,10 +6,6 @@ use std::time::Duration;
 use log::{debug, error, info};
 use ureq::OrAnyStatus;
 
-use ConfigurationError::{InvalidPort, InvalidTimeout};
-
-use crate::health_checker::ConfigurationError::InvalidStatusCode;
-
 #[cfg(test)]
 #[path = "./health_checker_test.rs"]
 mod test;
@@ -34,10 +30,10 @@ struct Configuration {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ConfigurationError {
-    InvalidPort(String),
-    InvalidTimeout(String),
-    InvalidStatusCode(String),
+pub enum InvalidConfiguration {
+    Port(String),
+    Timeout(String),
+    StatusCode(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -56,13 +52,13 @@ pub struct HeathcheckFailure {
     message: String,
 }
 
-fn sanitize(value: &String) -> Option<String> {
-    return Some(value.trim().to_string())
-        .filter(|s| !s.is_empty());
+fn sanitize(value: &str) -> Option<String> {
+    Some(value.trim().to_string())
+        .filter(|s| !s.is_empty())
 }
 
-fn load_method_from(vars: &HashMap<String, String>) -> Result<String, ConfigurationError> {
-    return match vars.get("HEALTHCHECK_METHOD") {
+fn load_method_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfiguration> {
+    match vars.get("HEALTHCHECK_METHOD") {
         None => Ok(default::METHOD.into()),
         Some(value) => {
             match sanitize(value) {
@@ -70,76 +66,76 @@ fn load_method_from(vars: &HashMap<String, String>) -> Result<String, Configurat
                 Some(value) => Ok(value.clone()),
             }
         }
-    };
+    }
 }
 
-fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, ConfigurationError> {
+fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfiguration> {
     let env_var = vars.get("HEALTHCHECK_PORT")
         .or(vars.get("PORT"));
 
-    return match env_var {
+    match env_var {
         None => Ok(default::PORT),
         Some(value) => {
             match sanitize(value) {
                 None => Ok(default::PORT),
                 Some(value) => match value.parse::<u16>() {
                     Ok(value) => Ok(value),
-                    Err(_) => Err(InvalidPort(value.clone())),
+                    Err(_) => Err(InvalidConfiguration::Port(value.clone())),
                 }
             }
         }
-    };
+    }
 }
 
-fn load_path_from(vars: &HashMap<String, String>) -> Result<String, ConfigurationError> {
-    return match vars.get("HEALTHCHECK_PATH") {
+fn load_path_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfiguration> {
+    match vars.get("HEALTHCHECK_PATH") {
         None => Ok(default::PATH.to_string()),
         Some(value) => {
             match sanitize(value) {
                 None => Ok(default::PATH.to_string()),
-                Some(value) => Ok(value.clone())
+                Some(value) => Ok(value.clone()),
             }
         }
-    };
+    }
 }
 
-fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, ConfigurationError> {
-    return match vars.get("HEALTHCHECK_TIMEOUT_MILLIS") {
+fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, InvalidConfiguration> {
+    match vars.get("HEALTHCHECK_TIMEOUT_MILLIS") {
         None => Ok(default::TIMEOUT),
         Some(value) => {
             match sanitize(value) {
                 None => Ok(default::TIMEOUT),
                 Some(value) => match value.parse::<u64>() {
                     Ok(value) => Ok(Duration::from_millis(value)),
-                    Err(_) => Err(InvalidTimeout(value)),
+                    Err(_) => Err(InvalidConfiguration::Timeout(value)),
                 }
             }
         }
-    };
+    }
 }
 
-fn load_status_code_from(vars: &HashMap<String, String>) -> Result<u16, ConfigurationError> {
-    return match vars.get("HEALTHCHECK_STATUS_CODE") {
+fn load_status_code_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfiguration> {
+    match vars.get("HEALTHCHECK_STATUS_CODE") {
         None => Ok(default::STATUS_CODE),
         Some(value) => {
             match sanitize(value) {
                 None => Ok(default::STATUS_CODE),
                 Some(value) => match value.parse::<u16>() {
                     Ok(value) => Ok(value),
-                    Err(_) => Err(InvalidStatusCode(value)),
+                    Err(_) => Err(InvalidConfiguration::StatusCode(value)),
                 }
             }
         }
-    };
+    }
 }
 
-fn load_configuration_from(vars: HashMap<String, String>) -> Result<Configuration, ConfigurationError> {
+fn load_configuration_from(vars: HashMap<String, String>) -> Result<Configuration, InvalidConfiguration> {
     let method = load_method_from(&vars)?;
     let port = load_port_from(&vars)?;
     let path = load_path_from(&vars)?;
     let timeout = load_timeout_from(&vars)?;
     let status_code = load_status_code_from(&vars)?;
-    return Ok(Configuration { method, port, path, timeout, status_code });
+    Ok(Configuration { method, port, path, timeout, status_code })
 }
 
 fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
@@ -148,7 +144,7 @@ fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
         .timeout_read(configuration.timeout)
         .build();
     let response = agent
-        .request(configuration.method.borrow(), &*url)
+        .request(configuration.method.borrow(), &url)
         .call()
         .or_any_status();
 
@@ -178,7 +174,7 @@ fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
         Err(failure) => error!("{}", failure.message),
     }
 
-    return result;
+    result
 }
 
 pub fn run_health_check() -> Result<State, HeathcheckFailure> {
@@ -191,9 +187,9 @@ pub fn run_health_check() -> Result<State, HeathcheckFailure> {
             }
         })?;
 
-    return get_health(&configuration).map_err(|err| {
+    get_health(&configuration).map_err(|err| {
         HeathcheckFailure {
             message: err.message,
         }
-    });
+    })
 }

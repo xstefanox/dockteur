@@ -1,12 +1,16 @@
 use std::time::Duration;
 
-use rand::Rng;
-use tokio;
-use wiremock::{Mock, MockServer, ResponseTemplate};
+use crate::health_checker::State::Unhealthy;
+use crate::health_checker::{get_health, load_configuration_from, sanitize, Configuration, InvalidConfiguration};
 use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use crate::health_checker::{Configuration, ConfigurationError, default, get_health, load_configuration_from, sanitize};
-use crate::health_checker::State::{Healthy, Unhealthy};
+#[cfg(not(target_arch = "aarch64"))]
+use crate::health_checker::default;
+#[cfg(not(target_arch = "aarch64"))]
+use crate::health_checker::State::Healthy;
+#[cfg(not(target_arch = "aarch64"))]
+use rand::Rng;
 
 #[macro_export]
 macro_rules! map {
@@ -120,7 +124,7 @@ fn malformed_status_code_should_not_be_accepted() {
     });
 
     let err = assert_err!(result);
-    assert_eq!(err, ConfigurationError::InvalidStatusCode("MALFORMED".to_string()));
+    assert_eq!(err, InvalidConfiguration::StatusCode("MALFORMED".to_string()));
 }
 
 #[test]
@@ -189,7 +193,7 @@ fn malformed_service_port_should_not_be_accepted() {
     });
 
     let configuration = assert_err!(result);
-    assert_eq!(configuration, ConfigurationError::InvalidPort("MALFORMED".to_string()));
+    assert_eq!(configuration, InvalidConfiguration::Port("MALFORMED".to_string()));
 }
 
 #[test]
@@ -285,7 +289,7 @@ fn malformed_timeout_port_should_not_be_accepted() {
     });
 
     let configuration = assert_err!(result);
-    assert_eq!(configuration, ConfigurationError::InvalidTimeout("MALFORMED".to_string()));
+    assert_eq!(configuration, InvalidConfiguration::Timeout("MALFORMED".to_string()));
 }
 
 #[test]
@@ -368,21 +372,21 @@ fn on_network_error_the_service_should_be_reported_as_error() {
 
 #[test]
 fn non_empty_string_sanitization() {
-    let result = sanitize(&"test".to_string());
+    let result = sanitize("test");
 
     assert_eq!(Some("test".to_string()), result)
 }
 
 #[test]
 fn empty_string_sanitization() {
-    let result = sanitize(&"".to_string());
+    let result = sanitize("");
 
     assert_eq!(None, result)
 }
 
 #[test]
 fn blank_string_sanitization() {
-    let result = sanitize(&" ".to_string());
+    let result = sanitize(" ");
 
     assert_eq!(None, result)
 }
@@ -391,7 +395,7 @@ async fn mock_server_health(mock_server: &MockServer, status_code: u16) {
     Mock::given(method("GET"))
         .and(path("/health"))
         .respond_with(ResponseTemplate::new(status_code))
-        .mount(&mock_server)
+        .mount(mock_server)
         .await
 }
 
@@ -399,7 +403,7 @@ async fn mock_server_health_with_delay(mock_server: &MockServer, status_code: u1
     Mock::given(method("GET"))
         .and(path("/health"))
         .respond_with(ResponseTemplate::new(status_code).set_delay(Duration::from_millis(delay_millis)))
-        .mount(&mock_server)
+        .mount(mock_server)
         .await
 }
 
@@ -407,6 +411,7 @@ fn client_configuration(port: u16) -> Configuration {
     client_configuration_with_timeout(port, 100)
 }
 
+#[cfg(not(target_arch = "aarch64"))]
 fn client_configuration_with_status_code(port: u16, status_code: u16) -> Configuration {
     Configuration {
         method: "GET".into(),
@@ -416,6 +421,7 @@ fn client_configuration_with_status_code(port: u16, status_code: u16) -> Configu
         status_code,
     }
 }
+
 
 fn client_configuration_with_timeout(port: u16, timeout: u64) -> Configuration {
     Configuration {
@@ -427,7 +433,8 @@ fn client_configuration_with_timeout(port: u16, timeout: u64) -> Configuration {
     }
 }
 
+#[cfg(not(target_arch = "aarch64"))]
 fn a_status_code() -> u16 {
     let mut rng = rand::thread_rng();
-    return rng.gen_range(200..226);
+    rng.gen_range(200..226)
 }
