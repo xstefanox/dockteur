@@ -18,7 +18,7 @@ These are the main features:
 - statically linked into a single executable: just copy one file into the final Docker image
 - multi-arch: `x86` and `arm` are both supported
 - configurable with environment variables
-- specific log messages: you should be able to easily detect issue the Docker container healthcheck logs with the 
+- specific log messages: you should be able to easily detect issue the Docker container healthcheck logs with the
   `docker inspect <container>` command
 
 # How to use
@@ -46,3 +46,11 @@ You can configure the HTTP endpoint to invoke for the healthcheck defining the f
 * `HEALTHCHECK_PATH`: the HTTP path (default `/`)
 * `HEALTHCHECK_STATUS_CODE`: the HTTP status code (default `200`)
 * `HEALTHCHECK_TIMEOUT_MILLIS`: the request timeout in milliseconds (default `500`)
+
+# Development
+
+1. Initialise your local repository checkout
+
+   ```shell
+   pre-commit install --hook-type commit-msg --hook-type pre-commit
+   ```
