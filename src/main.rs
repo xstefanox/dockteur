@@ -3,7 +3,7 @@ extern crate core;
 use env_logger::Target;
 use log::LevelFilter;
 
-use crate::health_checker::{ConfigurationError, run_health_check, State};
+use crate::health_checker::{InvalidConfiguration, run_health_check, State};
 use crate::system::ExitCode;
 
 mod health_checker;
