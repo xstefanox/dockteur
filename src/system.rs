@@ -3,15 +3,25 @@
 mod test;
 
 use std::fmt::{Display, Formatter};
+use Reason::{StatusCode, Timeout};
 use State::{Healthy, Unhealthy};
 use crate::{InvalidConfiguration, State};
-use crate::health_checker::HeathcheckFailure;
+use crate::health_checker::{HeathcheckFailure, Reason};
 
 impl Display for State {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Healthy => write!(f, "healthy"),
-            Unhealthy => write!(f, "unhealthy"),
+            Unhealthy(reason) => {
+                write!(f, "unhealthy: ")?;
+
+                match reason {
+                    StatusCode(value, text) => write!(f, "status code {} {}", value, text),
+                    Timeout(value) => {
+                        write!(f, "timed out after {:?}", value)
+                    },
+                }
+            }
         }
     }
 }
@@ -35,7 +45,7 @@ impl ExitCode for Result<State, HeathcheckFailure> {
         match self {
             Ok(state) => match state {
                 Healthy => 0,
-                Unhealthy => 1,
+                Unhealthy(_) => 1,
             }
             Err(_) => 2,
         }

@@ -6,9 +6,19 @@ use std::time::Duration;
 use log::{debug, error, info};
 use ureq::OrAnyStatus;
 
+use crate::health_checker::Reason::{StatusCode, Timeout};
+
 #[cfg(test)]
 #[path = "./health_checker_test.rs"]
 mod test;
+
+#[cfg(test)]
+#[path = "./health_checker_string_test.rs"]
+mod string_test;
+
+#[cfg(test)]
+#[path = "./health_checker_configuration_test.rs"]
+mod configuration_test;
 
 mod default {
     use std::time::Duration;
@@ -39,7 +49,13 @@ pub enum InvalidConfiguration {
 #[derive(Debug, PartialEq)]
 pub enum State {
     Healthy,
-    Unhealthy,
+    Unhealthy(Reason),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Reason {
+    Timeout(Duration),
+    StatusCode(u16, String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -155,12 +171,12 @@ fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
             if value.status() == configuration.status_code {
                 Ok(State::Healthy)
             } else {
-                Ok(State::Unhealthy)
+                Ok(State::Unhealthy(StatusCode(value.status(), value.status_text().to_string())))
             }
         }
         Err(e) => {
             if e.to_string().contains("timed out reading response") {
-                Ok(State::Unhealthy)
+                Ok(State::Unhealthy(Timeout(configuration.timeout)))
             } else {
                 Err(NetworkError {
                     message: format!("network error: {}", e)

@@ -1,12 +1,11 @@
 use std::time::Duration;
 
 use crate::health_checker::State::Unhealthy;
-use crate::health_checker::{get_health, load_configuration_from, sanitize, Configuration, InvalidConfiguration};
+use crate::health_checker::{default, get_health, Configuration};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
+use crate::health_checker::Reason::{StatusCode, Timeout};
 
-#[cfg(not(target_arch = "aarch64"))]
-use crate::health_checker::default;
 #[cfg(not(target_arch = "aarch64"))]
 use crate::health_checker::State::Healthy;
 #[cfg(not(target_arch = "aarch64"))]
@@ -51,277 +50,6 @@ macro_rules! assert_err {
     };
 }
 
-#[test]
-fn service_method_should_be_read_from_environment_variable() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_METHOD" => "HEAD",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "HEAD");
-}
-
-#[test]
-fn service_method_should_fallback_on_default() {
-    let result = load_configuration_from(map! {});
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "GET");
-}
-
-#[test]
-fn empty_service_method_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_METHOD" => "",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "GET");
-}
-
-#[test]
-fn blank_service_method_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_METHOD" => " ",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "GET");
-}
-
-#[test]
-fn service_method_should_be_trimmed() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_METHOD" => " POST ",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "POST");
-}
-
-#[test]
-fn expected_status_code_should_be_read_from_environment_variable() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_STATUS_CODE" => "201",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.status_code, 201);
-}
-
-#[test]
-fn expected_status_code_should_fallback_on_default() {
-    let result = load_configuration_from(map! {});
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.status_code, 200);
-}
-
-#[test]
-fn malformed_status_code_should_not_be_accepted() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_STATUS_CODE" => "MALFORMED",
-    });
-
-    let err = assert_err!(result);
-    assert_eq!(err, InvalidConfiguration::StatusCode("MALFORMED".to_string()));
-}
-
-#[test]
-fn empty_status_code_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_STATUS_CODE" => "",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.status_code, 200);
-}
-
-#[test]
-fn blank_status_code_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_STATUS_CODE" => " ",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.status_code, 200);
-}
-
-#[test]
-fn service_port_should_be_read_from_environment_variable() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_PORT" => "8080",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 8080);
-}
-
-#[test]
-fn service_port_should_be_read_from_common_environment_variable() {
-    let result = load_configuration_from(map! {
-        "PORT" => "8080",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 8080);
-}
-
-#[test]
-fn port_specific_variable_should_have_precedence_on_common_variable() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_PORT" => "8081",
-        "PORT" => "8080",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 8081);
-}
-
-#[test]
-fn service_port_should_fallback_on_default() {
-    let result = load_configuration_from(map! {});
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 80);
-}
-
-#[test]
-fn malformed_service_port_should_not_be_accepted() {
-    let result = load_configuration_from(map! {
-        "PORT" => "MALFORMED",
-    });
-
-    let configuration = assert_err!(result);
-    assert_eq!(configuration, InvalidConfiguration::Port("MALFORMED".to_string()));
-}
-
-#[test]
-fn empty_service_port_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_PORT" => "",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 80);
-}
-
-#[test]
-fn blank_service_port_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_PORT" => " ",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 80);
-}
-
-#[test]
-fn service_path_should_be_read_from_environment_variable() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_PATH" => "/this/is/the/path",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/this/is/the/path");
-}
-
-#[test]
-fn service_path_should_fallback_on_default() {
-    let result = load_configuration_from(map! {});
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/");
-}
-
-#[test]
-fn empty_service_path_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_PATH" => "",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/");
-}
-
-#[test]
-fn blank_service_path_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_PATH" => " ",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/");
-}
-
-#[test]
-fn service_path_should_be_trimmed() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_PATH" => " /this/is/the/path ",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/this/is/the/path");
-}
-
-#[test]
-fn timeout_should_be_read_from_environment_variable() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_TIMEOUT_MILLIS" => "100",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(100));
-}
-
-#[test]
-fn timeout_should_fallback_on_default() {
-    let result = load_configuration_from(map! {});
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(500));
-}
-
-#[test]
-fn malformed_timeout_port_should_not_be_accepted() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_TIMEOUT_MILLIS" => "MALFORMED",
-    });
-
-    let configuration = assert_err!(result);
-    assert_eq!(configuration, InvalidConfiguration::Timeout("MALFORMED".to_string()));
-}
-
-#[test]
-fn empty_timeout_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_TIMEOUT_MILLIS" => "",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(500));
-}
-
-#[test]
-fn blank_timeout_should_fallback_on_default() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_TIMEOUT_MILLIS" => " ",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(500));
-}
-
-#[test]
-fn timeout_should_be_trimmed() {
-    let result = load_configuration_from(map! {
-        "HEALTHCHECK_TIMEOUT_MILLIS" => " 100 ",
-    });
-
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(100));
-}
-
 #[cfg(not(target_arch = "aarch64"))]
 #[tokio::test]
 async fn a_healthy_service_should_be_reported() {
@@ -345,7 +73,7 @@ async fn an_unhealthy_service_should_be_reported() {
     let result = get_health(&configuration);
 
     let state = assert_ok!(result);
-    assert_eq!(Unhealthy, state);
+    assert_eq!(Unhealthy(StatusCode(500, "Internal Server Error".to_string())), state);
 }
 
 #[tokio::test]
@@ -357,7 +85,7 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
     let result = get_health(&configuration);
 
     let state = assert_ok!(result);
-    assert_eq!(Unhealthy, state);
+    assert_eq!(Unhealthy(Timeout(Duration::from_millis(1))), state);
 }
 
 #[test]
@@ -368,27 +96,6 @@ fn on_network_error_the_service_should_be_reported_as_error() {
 
     let err = assert_err!(result);
     assert!(err.message.starts_with("network error"))
-}
-
-#[test]
-fn non_empty_string_sanitization() {
-    let result = sanitize("test");
-
-    assert_eq!(Some("test".to_string()), result)
-}
-
-#[test]
-fn empty_string_sanitization() {
-    let result = sanitize("");
-
-    assert_eq!(None, result)
-}
-
-#[test]
-fn blank_string_sanitization() {
-    let result = sanitize(" ");
-
-    assert_eq!(None, result)
 }
 
 async fn mock_server_health(mock_server: &MockServer, status_code: u16) {
@@ -408,7 +115,7 @@ async fn mock_server_health_with_delay(mock_server: &MockServer, status_code: u1
 }
 
 fn client_configuration(port: u16) -> Configuration {
-    client_configuration_with_timeout(port, 100)
+    client_configuration_with_timeout(port, default::TIMEOUT.as_millis() as u64)
 }
 
 #[cfg(not(target_arch = "aarch64"))]
