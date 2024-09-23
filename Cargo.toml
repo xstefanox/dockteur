@@ -9,7 +9,7 @@ log = "^0.4.0"
 ureq = { version = "^2.7.0", default-features = false }
 
 [dev-dependencies]
-assertables = "7.0.1"
+assertables = "8.0.0"
 ctor = "0.2.7"
 http = "1.1.0"
 rand = "0.8.5"
