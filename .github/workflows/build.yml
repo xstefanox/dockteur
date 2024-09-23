@@ -10,8 +10,7 @@ on:
 jobs:
   docker-image:
     name: "Docker image"
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
     steps:
 
       - name: "Define the Docker image version"
@@ -45,6 +44,8 @@ jobs:
           tags: xstefanox/dockteur:${{ steps.image_version.outputs.DEFAULT_IMAGE_VERSION }}
           platforms: linux/amd64,linux/arm64
           target: default
+          cache-from: type=registry,ref=xstefanox/dockteur:buildcache
+          cache-to: type=registry,ref=xstefanox/dockteur:buildcache,mode=max,compression=zstd
 
       - name: "Build and push / Alpine"
         uses: docker/build-push-action@v6
@@ -53,3 +54,5 @@ jobs:
           tags: xstefanox/dockteur:${{ steps.image_version.outputs.ALPINE_IMAGE_VERSION }}
           platforms: linux/amd64,linux/arm64
           target: alpine
+          cache-from: type=registry,ref=xstefanox/dockteur:buildcache-alpine
+          cache-to: type=registry,ref=xstefanox/dockteur:buildcache,mode=max,compression=zstd
