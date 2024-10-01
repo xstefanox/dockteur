@@ -13,7 +13,7 @@ assertables = "8.0.0"
 ctor = "0.2.7"
 http = "1.1.0"
 rand = "0.8.5"
-rstest = "0.22.0"
+rstest = "0.23.0"
 tokio = { version = "1.36.0", features = ["macros"] }
 wiremock = "0.6.0"
 
