@@ -1,3 +1,4 @@
+use std::net::TcpListener;
 use std::time::Duration;
 
 use crate::health_checker::Reason::{StatusCode, Timeout};
@@ -48,7 +49,10 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
 
 #[test]
 fn on_network_error_the_service_should_be_reported_as_error() {
-    let configuration = client_configuration(8080);
+    let unused_port = TcpListener::bind("localhost:0").unwrap()
+        .local_addr().unwrap()
+        .port();
+    let configuration = client_configuration(unused_port);
 
     let result = get_health(&configuration);
 
