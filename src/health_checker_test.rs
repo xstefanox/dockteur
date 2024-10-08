@@ -5,10 +5,7 @@ use crate::health_checker::{default, get_health, Configuration};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 use crate::health_checker::Reason::{StatusCode, Timeout};
-
-#[cfg(not(target_arch = "aarch64"))]
 use crate::health_checker::State::Healthy;
-#[cfg(not(target_arch = "aarch64"))]
 use rand::Rng;
 
 #[macro_export]
@@ -50,7 +47,6 @@ macro_rules! assert_err {
     };
 }
 
-#[cfg(not(target_arch = "aarch64"))]
 #[tokio::test]
 async fn a_healthy_service_should_be_reported() {
     let mock_server = MockServer::start().await;
@@ -118,7 +114,6 @@ fn client_configuration(port: u16) -> Configuration {
     client_configuration_with_timeout(port, default::TIMEOUT.as_millis() as u64)
 }
 
-#[cfg(not(target_arch = "aarch64"))]
 fn client_configuration_with_status_code(port: u16, status_code: u16) -> Configuration {
     Configuration {
         method: "GET".into(),
@@ -140,7 +135,6 @@ fn client_configuration_with_timeout(port: u16, timeout: u64) -> Configuration {
     }
 }
 
-#[cfg(not(target_arch = "aarch64"))]
 fn a_status_code() -> u16 {
     let mut rng = rand::thread_rng();
     rng.gen_range(200..226)
