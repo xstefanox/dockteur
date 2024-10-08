@@ -38,9 +38,9 @@ dependencies = [
 
 [[package]]
 name = "assertables"
-version = "8.15.0"
+version = "8.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33cc96ccd3fee9e81a4992418b1a2a07e88b72463b950709cdf7551337ddd154"
+checksum = "def82f09157bb384f0bbaadb84747e39a88b50354e5e330f12adb485ed779034"
 
 [[package]]
 name = "async-trait"
