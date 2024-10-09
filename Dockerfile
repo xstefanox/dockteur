@@ -1,4 +1,4 @@
-FROM rust:1.81-slim-bullseye AS build-default
+FROM rust:1.81-slim-bullseye AS default-builder
 RUN apt-get update && apt-get install -y upx-ucl
 RUN rustup component add clippy
 USER nobody
@@ -10,7 +10,7 @@ RUN cargo test
 RUN cargo build --release
 RUN upx --best --lzma target/release/dockteur
 
-FROM rust:1.81-alpine3.20 AS build-alpine
+FROM rust:1.81-alpine3.20 AS alpine-builder
 RUN apk add upx musl-dev
 RUN rustup component add clippy
 USER nobody
@@ -23,7 +23,7 @@ RUN cargo build --release
 RUN upx --best --lzma target/release/dockteur
 
 FROM scratch AS default
-COPY --from=build-default /opt/dockteur/target/release/dockteur /dockteur
+COPY --from=default-builder /opt/dockteur/target/release/dockteur /dockteur
 
 FROM scratch AS alpine
-COPY --from=build-alpine /opt/dockteur/target/release/dockteur /dockteur
+COPY --from=alpine-builder /opt/dockteur/target/release/dockteur /dockteur
