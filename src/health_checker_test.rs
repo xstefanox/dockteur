@@ -1,51 +1,13 @@
 use std::time::Duration;
 
-use crate::health_checker::State::Unhealthy;
-use crate::health_checker::{default, get_health, Configuration};
-use wiremock::matchers::{method, path};
-use wiremock::{Mock, MockServer, ResponseTemplate};
 use crate::health_checker::Reason::{StatusCode, Timeout};
 use crate::health_checker::State::Healthy;
+use crate::health_checker::State::Unhealthy;
+use crate::health_checker::{default, get_health, Configuration};
+use crate::{assert_err, assert_ok};
 use rand::Rng;
-
-#[macro_export]
-macro_rules! map {
-    {$($k: expr => $v: expr),* $(,)?} => {
-        {
-            let map: std::collections::HashMap<String, String> = vec! [
-                $(
-                    ($k.to_string(), $v.to_string()),
-                )*
-            ].iter().cloned().collect();
-
-            map
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! assert_ok {
-    ( $x:expr ) => {
-        match $x {
-            std::result::Result::Ok(v) => v,
-            std::result::Result::Err(e) => {
-                panic!("Expected: Ok(_)\nActual: Err({:?})", e);
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! assert_err {
-    ( $x:expr ) => {
-        match $x {
-            std::result::Result::Err(v) => v,
-            std::result::Result::Ok(e) => {
-                panic!("Expected: Err(_)\nActual: Ok({:?})", e);
-            }
-        }
-    };
-}
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
 #[tokio::test]
 async fn a_healthy_service_should_be_reported() {

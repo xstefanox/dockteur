@@ -11,6 +11,7 @@ mod system;
 
 #[cfg(test)]
 mod test_logger;
+mod test_macros;
 
 fn main() {
     env_logger::Builder::from_default_env()
