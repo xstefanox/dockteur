@@ -1,4 +1,4 @@
-FROM rust:1.81-slim-bullseye AS default-builder
+FROM rust:1.82-slim-bullseye AS default-builder
 RUN apt-get update && apt-get install -y upx-ucl
 RUN rustup component add clippy
 USER nobody
@@ -10,7 +10,7 @@ RUN cargo test
 RUN cargo build --release
 RUN upx --best --lzma target/release/dockteur
 
-FROM rust:1.81-alpine3.20 AS alpine-builder
+FROM rust:1.82-alpine3.20 AS alpine-builder
 RUN apk add upx musl-dev
 RUN rustup component add clippy
 USER nobody
