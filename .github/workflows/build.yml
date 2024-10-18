@@ -9,136 +9,61 @@ on:
 
 jobs:
 
-  version:
-    name: "Version definition"
+  docker-image:
+    name: "Docker image"
     runs-on: ubuntu-latest
+
     steps:
 
       - name: "Define the Docker image version"
+        id: image_version
         run: |
           if [[ "${GITHUB_REF}" =~ 'refs/tags/' ]]
           then
-            echo DEFAULT_IMAGE_VERSION=${GITHUB_REF#refs/tags/} >> $GITHUB_ENV
-            echo ALPINE_IMAGE_VERSION=${GITHUB_REF#refs/tags/}-alpine >> $GITHUB_ENV
+            echo DEFAULT_IMAGE_VERSION=${GITHUB_REF#refs/tags/} >> $GITHUB_OUTPUT
+            echo ALPINE_IMAGE_VERSION=${GITHUB_REF#refs/tags/}-alpine >> $GITHUB_OUTPUT
           else
-            echo DEFAULT_IMAGE_VERSION=latest >> $GITHUB_ENV
-            echo ALPINE_IMAGE_VERSION=alpine >> $GITHUB_ENV
+            echo DEFAULT_IMAGE_VERSION=latest >> $GITHUB_OUTPUT
+            echo ALPINE_IMAGE_VERSION=alpine >> $GITHUB_OUTPUT
           fi
+
+          if [[ "${{ github.ref_name == 'master' || startsWith(github.ref, 'refs/tags/') }}" == true ]]
+          then
+            BUILD_OUTPUT="registry"
+          else
+            BUILD_OUTPUT="cacheonly"
+          fi
+
+          echo BUILD_OUTPUT=${BUILD_OUTPUT} >> $GITHUB_OUTPUT
 
       - name: "Checkout"
         uses: actions/checkout@v4
 
-      - name: "Short SHA calculation"
-        uses: benjlevesque/short-sha@v3.0
-
-      - name: "Publication check"
-        id: publicationCheck
-        uses: actions/github-script@v7
-        with:
-          # language=JS
-          script:
-            const isMaster = ${{ github.ref_name == 'master' }};
-            const isTag = ${{ startsWith(github.ref, 'refs/tags/') }};
-            const shouldPublish = isMaster || isTag;
-            console.debug(`isMaster = ${isMaster}`);
-            console.debug(`isTag = ${isTag}`);
-            console.debug(`shouldPublish = ${shouldPublish}`);
-            core.setOutput("shouldPublish", shouldPublish);
-
-    outputs:
-      default: ${{ env.DEFAULT_IMAGE_VERSION }}
-      alpine: ${{ env.ALPINE_IMAGE_VERSION }}
-      sha: ${{ env.SHA }}
-      shouldPublish: ${{ steps.publicationCheck.outputs.shouldPublish }}
-
-  build:
-    name: "Docker image (${{ matrix.build.target }} - ${{ matrix.build.arch }})"
-    strategy:
-      matrix:
-        build:
-          - { target: default, arch: linux/amd64, runner: ubuntu-latest }
-          - { target: default, arch: linux/arm64, runner: ubicloud-standard-2-arm }
-          - { target: alpine, arch: linux/amd64,  runner: ubuntu-latest }
-          - { target: alpine, arch: linux/arm64,  runner: ubicloud-standard-2-arm }
-    runs-on: ${{ matrix.build.runner }}
-    needs: version
-    steps:
-
-      - name: "Context configuration"
-        run: |
-          ARCH=${{ matrix.build.arch }}
-          ARCH=${ARCH/\//-}
-          BRANCH_NAME=${{ github.ref_name }}
-          BRANCH_NAME=${BRANCH_NAME/\//-}
-          MASTER_CACHE_IMAGE=ghcr.io/xstefanox/dockteur:master-buildcache-${{ matrix.build.target }}-${ARCH}
-          BRANCH_CACHE_IMAGE=ghcr.io/xstefanox/dockteur:${BRANCH_NAME/\//-}-buildcache-${{ matrix.build.target }}-${ARCH}
-          FINAL_IMAGE_NAME=ghcr.io/xstefanox/dockteur:${{ needs.version.outputs.sha }}-${{ matrix.build.target }}-${ARCH}
-          echo MASTER_CACHE_IMAGE=$MASTER_CACHE_IMAGE >> $GITHUB_ENV
-          echo BRANCH_CACHE_IMAGE=$BRANCH_CACHE_IMAGE >> $GITHUB_ENV
-          echo FINAL_IMAGE_NAME=$FINAL_IMAGE_NAME >> $GITHUB_ENV
-
-      - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v3
-
-      - name: "GitHub Container Registry authentication"
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: "Build and push"
-        uses: docker/build-push-action@v6
-        with:
-          push: ${{ needs.version.outputs.shouldPublish == 'true' }}
-          tags: ${{ env.FINAL_IMAGE_NAME }}
-          platforms: ${{ matrix.build.arch }}
-          target: ${{ matrix.build.target }}-builder
-          cache-from: |
-            type=registry,ref=${{ env.MASTER_CACHE_IMAGE }}
-            type=registry,ref=${{ env.BRANCH_CACHE_IMAGE }}
-          cache-to:
-            type=registry,ref=${{ env.BRANCH_CACHE_IMAGE }},mode=max,compression=zstd
-
-  multiarch:
-    name: "Multiarch Docker image (${{ matrix.target }})"
-    strategy:
-      matrix:
-        target:
-          - default
-          - alpine
-    runs-on: ubuntu-latest
-    if: needs.version.outputs.shouldPublish == 'true'
-    needs:
-      - version
-      - build
-    steps:
-
-      - name: "Set up Docker Buildx"
-        uses: docker/setup-buildx-action@v3
-
-      - name: "GitHub Container Registry authentication"
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: "DockerHub authentication"
+      - name: "Login to DockerHub"
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: "Manifest creation"
-        run: >
-          docker buildx imagetools create
-          --tag ghcr.io/xstefanox/dockteur:${{ needs.version.outputs.sha }}-${{ matrix.target }}
-          ghcr.io/xstefanox/dockteur:${{ needs.version.outputs.sha }}-${{ matrix.target }}-linux-amd64
-          ghcr.io/xstefanox/dockteur:${{ needs.version.outputs.sha }}-${{ matrix.target }}-linux-arm64
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+        with:
+          version: "lab:latest"
+          driver: cloud
+          endpoint: "xstefanox/remote-arm"
 
-      - name: "Image publication"
-        run: >
-          docker buildx imagetools create
-          --tag xstefanox/dockteur:${{ needs.version.outputs[matrix.target] }}
-          ghcr.io/xstefanox/dockteur:${{ needs.version.outputs.sha }}-${{ matrix.target }}
+      - name: "Build and push / default"
+        uses: docker/build-push-action@v6
+        with:
+          tags: xstefanox/dockteur:${{ steps.image_version.outputs.DEFAULT_IMAGE_VERSION }}
+          platforms: linux/amd64,linux/arm64
+          target: default
+          outputs: type=${{ steps.image_version.outputs.BUILD_OUTPUT }}
+
+      - name: "Build and push / alpine"
+        uses: docker/build-push-action@v6
+        with:
+          tags: xstefanox/dockteur:${{ steps.image_version.outputs.ALPINE_IMAGE_VERSION }}
+          platforms: linux/amd64,linux/arm64
+          target: alpine
+          outputs: type=${{ steps.image_version.outputs.BUILD_OUTPUT }}
