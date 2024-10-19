@@ -74,7 +74,7 @@ fn sanitize(value: &str) -> Option<String> {
 }
 
 fn load_method_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfiguration> {
-    match vars.get("HEALTHCHECK_METHOD") {
+    match vars.get("DOCKTEUR_METHOD") {
         None => Ok(default::METHOD.into()),
         Some(value) => {
             match sanitize(value) {
@@ -86,7 +86,7 @@ fn load_method_from(vars: &HashMap<String, String>) -> Result<String, InvalidCon
 }
 
 fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfiguration> {
-    let env_var = vars.get("HEALTHCHECK_PORT")
+    let env_var = vars.get("DOCKTEUR_PORT")
         .or(vars.get("PORT"));
 
     match env_var {
@@ -107,7 +107,7 @@ fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfigur
 }
 
 fn load_path_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfiguration> {
-    match vars.get("HEALTHCHECK_PATH") {
+    match vars.get("DOCKTEUR_PATH") {
         None => Ok(default::PATH.to_string()),
         Some(value) => {
             match sanitize(value) {
@@ -119,7 +119,7 @@ fn load_path_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfi
 }
 
 fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, InvalidConfiguration> {
-    match vars.get("HEALTHCHECK_TIMEOUT_MILLIS") {
+    match vars.get("DOCKTEUR_TIMEOUT_MILLIS") {
         None => Ok(default::TIMEOUT),
         Some(value) => {
             match sanitize(value) {
@@ -134,7 +134,7 @@ fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, Invalid
 }
 
 fn load_status_code_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfiguration> {
-    match vars.get("HEALTHCHECK_STATUS_CODE") {
+    match vars.get("DOCKTEUR_STATUS_CODE") {
         None => Ok(default::STATUS_CODE),
         Some(value) => {
             match sanitize(value) {

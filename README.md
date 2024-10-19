@@ -41,11 +41,11 @@ HEALTHCHECK --interval=3s --timeout=3s --retries=10 CMD dockteur
 
 You can configure the HTTP endpoint to invoke for the healthcheck defining the following environment variables
 
-* `HEALTHCHECK_METHOD`: the HTTP method (default `GET`)
-* `HEALTHCHECK_PORT`: the TCP port (default `80`)
-* `HEALTHCHECK_PATH`: the HTTP path (default `/`)
-* `HEALTHCHECK_STATUS_CODE`: the HTTP status code (default `200`)
-* `HEALTHCHECK_TIMEOUT_MILLIS`: the request timeout in milliseconds (default `500`)
+* `DOCKTEUR_METHOD`: the HTTP method (default `GET`)
+* `DOCKTEUR_PORT`: the TCP port (default `80`)
+* `DOCKTEUR_PATH`: the HTTP path (default `/`)
+* `DOCKTEUR_STATUS_CODE`: the HTTP status code (default `200`)
+* `DOCKTEUR_TIMEOUT_MILLIS`: the request timeout in milliseconds (default `500`)
 
 # Development
 
