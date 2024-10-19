@@ -68,13 +68,20 @@ pub struct HeathcheckFailure {
     message: String,
 }
 
+#[macro_export]
+macro_rules! env {
+    ( $x:expr ) => {
+        format!("DOCKTEUR_{}", $x).as_str()
+    };
+}
+
 fn sanitize(value: &str) -> Option<String> {
     Some(value.trim().to_string())
         .filter(|s| !s.is_empty())
 }
 
 fn load_method_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfiguration> {
-    match vars.get("DOCKTEUR_METHOD") {
+    match vars.get(env!("METHOD")) {
         None => Ok(default::METHOD.into()),
         Some(value) => {
             match sanitize(value) {
@@ -86,7 +93,7 @@ fn load_method_from(vars: &HashMap<String, String>) -> Result<String, InvalidCon
 }
 
 fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfiguration> {
-    let env_var = vars.get("DOCKTEUR_PORT")
+    let env_var = vars.get(env!("PORT"))
         .or(vars.get("PORT"));
 
     match env_var {
@@ -107,7 +114,7 @@ fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfigur
 }
 
 fn load_path_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfiguration> {
-    match vars.get("DOCKTEUR_PATH") {
+    match vars.get(env!("PATH")) {
         None => Ok(default::PATH.to_string()),
         Some(value) => {
             match sanitize(value) {
@@ -119,7 +126,7 @@ fn load_path_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfi
 }
 
 fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, InvalidConfiguration> {
-    match vars.get("DOCKTEUR_TIMEOUT_MILLIS") {
+    match vars.get(env!("TIMEOUT_MILLIS")) {
         None => Ok(default::TIMEOUT),
         Some(value) => {
             match sanitize(value) {
@@ -134,7 +141,7 @@ fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, Invalid
 }
 
 fn load_status_code_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfiguration> {
-    match vars.get("DOCKTEUR_STATUS_CODE") {
+    match vars.get(env!("STATUS_CODE")) {
         None => Ok(default::STATUS_CODE),
         Some(value) => {
             match sanitize(value) {
