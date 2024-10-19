@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use log::{debug, error, info};
 use ureq::OrAnyStatus;
-
+use url::Url;
 use crate::health_checker::Reason::{StatusCode, Timeout};
 
 #[cfg(test)]
@@ -95,7 +95,10 @@ fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfigur
             match sanitize(value) {
                 None => Ok(default::PORT),
                 Some(value) => match value.parse::<u16>() {
-                    Ok(value) => Ok(value),
+                    Ok(number) => match number {
+                        0 => Err(InvalidConfiguration::Port(value.clone())),
+                        _ => Ok(number),
+                    },
                     Err(_) => Err(InvalidConfiguration::Port(value.clone())),
                 }
             }
@@ -155,12 +158,14 @@ fn load_configuration_from(vars: HashMap<String, String>) -> Result<Configuratio
 }
 
 fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
-    let url = format!("http://localhost:{}{}", configuration.port, configuration.path);
+    let mut url = Url::parse("http://localhost").unwrap();
+    url.set_port(Some(configuration.port)).unwrap();
+    url.set_path(&configuration.path);
     let agent = ureq::AgentBuilder::new()
         .timeout_read(configuration.timeout)
         .build();
     let response = agent
-        .request(configuration.method.borrow(), &url)
+        .request(configuration.method.borrow(), url.as_ref())
         .call()
         .or_any_status();
 

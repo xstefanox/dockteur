@@ -148,6 +148,26 @@ fn malformed_service_port_should_not_be_accepted() {
 }
 
 #[test]
+fn port_non_representable_in_16_bits_should_not_be_accepted() {
+    let result = crate::health_checker::load_configuration_from(map! {
+        "PORT" => "65536",
+    });
+
+    let configuration = assert_err!(result);
+    assert_eq!(configuration, InvalidConfiguration::Port("65536".to_string()));
+}
+
+#[test]
+fn port_0_should_not_be_accepted() {
+    let result = crate::health_checker::load_configuration_from(map! {
+        "PORT" => "0",
+    });
+
+    let configuration = assert_err!(result);
+    assert_eq!(configuration, InvalidConfiguration::Port("0".to_string()));
+}
+
+#[test]
 fn empty_service_port_should_fallback_on_default() {
     let result = crate::health_checker::load_configuration_from(map! {
         "HEALTHCHECK_PORT" => "",
