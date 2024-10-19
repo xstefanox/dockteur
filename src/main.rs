@@ -18,6 +18,7 @@ fn main() {
         .target(Target::Stdout)
         .filter_level(LevelFilter::Info)
         .parse_default_env()
+        .format_target(false)
         .init();
 
     let result = run_health_check();
