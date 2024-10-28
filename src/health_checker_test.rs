@@ -1,11 +1,10 @@
 use std::net::TcpListener;
 use std::time::Duration;
-
+use assertables::{assert_err, assert_ok_eq};
 use crate::health_checker::Reason::{StatusCode, Timeout};
 use crate::health_checker::State::Healthy;
 use crate::health_checker::State::Unhealthy;
 use crate::health_checker::{default, get_health, Configuration};
-use crate::{assert_err, assert_ok};
 use rand::Rng;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -19,8 +18,7 @@ async fn a_healthy_service_should_be_reported() {
 
     let result = get_health(&configuration);
 
-    let state = assert_ok!(result);
-    assert_eq!(Healthy, state);
+    assert_ok_eq!(result, Healthy);
 }
 
 #[tokio::test]
@@ -31,8 +29,7 @@ async fn an_unhealthy_service_should_be_reported() {
 
     let result = get_health(&configuration);
 
-    let state = assert_ok!(result);
-    assert_eq!(Unhealthy(StatusCode(500, "Internal Server Error".to_string())), state);
+    assert_ok_eq!(result, Unhealthy(StatusCode(500, "Internal Server Error".to_string())));
 }
 
 #[tokio::test]
@@ -43,8 +40,7 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
 
     let result = get_health(&configuration);
 
-    let state = assert_ok!(result);
-    assert_eq!(Unhealthy(Timeout(Duration::from_millis(1))), state);
+    assert_ok_eq!(result, Unhealthy(Timeout(Duration::from_millis(1))));
 }
 
 #[test]

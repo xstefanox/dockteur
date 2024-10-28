@@ -1,5 +1,6 @@
 use std::time::Duration;
-use crate::{assert_err, assert_ok, map};
+use assertables::{assert_err_eq, assert_ok};
+use crate::map;
 use crate::health_checker::InvalidConfiguration;
 
 #[test]
@@ -74,8 +75,7 @@ fn malformed_status_code_should_not_be_accepted() {
         "DOCKTEUR_STATUS_CODE" => "MALFORMED",
     });
 
-    let err = assert_err!(result);
-    assert_eq!(err, InvalidConfiguration::StatusCode("MALFORMED".to_string()));
+    assert_err_eq!(result, InvalidConfiguration::StatusCode("MALFORMED".to_string()));
 }
 
 #[test]
@@ -143,8 +143,7 @@ fn malformed_service_port_should_not_be_accepted() {
         "PORT" => "MALFORMED",
     });
 
-    let configuration = assert_err!(result);
-    assert_eq!(configuration, InvalidConfiguration::Port("MALFORMED".to_string()));
+    assert_err_eq!(result, InvalidConfiguration::Port("MALFORMED".to_string()));
 }
 
 #[test]
@@ -153,8 +152,7 @@ fn port_non_representable_in_16_bits_should_not_be_accepted() {
         "PORT" => "65536",
     });
 
-    let configuration = assert_err!(result);
-    assert_eq!(configuration, InvalidConfiguration::Port("65536".to_string()));
+    assert_err_eq!(result, InvalidConfiguration::Port("65536".to_string()));
 }
 
 #[test]
@@ -163,8 +161,7 @@ fn port_0_should_not_be_accepted() {
         "PORT" => "0",
     });
 
-    let configuration = assert_err!(result);
-    assert_eq!(configuration, InvalidConfiguration::Port("0".to_string()));
+    assert_err_eq!(result, InvalidConfiguration::Port("0".to_string()));
 }
 
 #[test]
@@ -259,8 +256,7 @@ fn malformed_timeout_port_should_not_be_accepted() {
         "DOCKTEUR_TIMEOUT_MILLIS" => "MALFORMED",
     });
 
-    let configuration = assert_err!(result);
-    assert_eq!(configuration, InvalidConfiguration::Timeout("MALFORMED".to_string()));
+    assert_err_eq!(result, InvalidConfiguration::Timeout("MALFORMED".to_string()));
 }
 
 #[test]

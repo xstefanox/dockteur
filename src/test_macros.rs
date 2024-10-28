@@ -12,19 +12,3 @@ macro_rules! map {
         }
     };
 }
-
-#[macro_export]
-macro_rules! assert_ok {
-    ( $x:expr ) => {{
-        assertables::assert_ok!($x);
-        $x.unwrap()
-    }};
-}
-
-#[macro_export]
-macro_rules! assert_err {
-    ( $x:expr ) => {{
-        assertables::assert_err!($x);
-        $x.unwrap_err()
-    }};
-}
