@@ -1,7 +1,7 @@
-use std::time::Duration;
-use assertables::{assert_err_eq, assert_ok};
-use crate::map;
 use crate::health_checker::InvalidConfiguration;
+use crate::map;
+use assert2::{check, let_assert};
+use std::time::Duration;
 
 #[test]
 fn service_method_should_be_read_from_environment_variable() {
@@ -9,16 +9,16 @@ fn service_method_should_be_read_from_environment_variable() {
         "DOCKTEUR_METHOD" => "HEAD",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "HEAD");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.method == "HEAD");
 }
 
 #[test]
 fn service_method_should_fallback_on_default() {
     let result = crate::health_checker::load_configuration_from(map! {});
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "GET");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.method == "GET");
 }
 
 #[test]
@@ -27,8 +27,8 @@ fn empty_service_method_should_fallback_on_default() {
         "DOCKTEUR_METHOD" => "",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "GET");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.method == "GET");
 }
 
 #[test]
@@ -37,8 +37,8 @@ fn blank_service_method_should_fallback_on_default() {
         "DOCKTEUR_METHOD" => " ",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "GET");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.method == "GET");
 }
 
 #[test]
@@ -47,8 +47,8 @@ fn service_method_should_be_trimmed() {
         "DOCKTEUR_METHOD" => " POST ",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.method, "POST");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.method == "POST");
 }
 
 #[test]
@@ -57,16 +57,16 @@ fn expected_status_code_should_be_read_from_environment_variable() {
         "DOCKTEUR_STATUS_CODE" => "201",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.status_code, 201);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.status_code == 201);
 }
 
 #[test]
 fn expected_status_code_should_fallback_on_default() {
     let result = crate::health_checker::load_configuration_from(map! {});
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.status_code, 200);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.status_code == 200);
 }
 
 #[test]
@@ -75,7 +75,8 @@ fn malformed_status_code_should_not_be_accepted() {
         "DOCKTEUR_STATUS_CODE" => "MALFORMED",
     });
 
-    assert_err_eq!(result, InvalidConfiguration::StatusCode("MALFORMED".to_string()));
+    let_assert!(Err(error) = result);
+    check!(error == InvalidConfiguration::StatusCode("MALFORMED".to_string()));
 }
 
 #[test]
@@ -84,8 +85,8 @@ fn empty_status_code_should_fallback_on_default() {
         "DOCKTEUR_STATUS_CODE" => "",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.status_code, 200);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.status_code == 200);
 }
 
 #[test]
@@ -94,8 +95,8 @@ fn blank_status_code_should_fallback_on_default() {
         "DOCKTEUR_STATUS_CODE" => " ",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.status_code, 200);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.status_code == 200);
 }
 
 #[test]
@@ -104,8 +105,8 @@ fn service_port_should_be_read_from_environment_variable() {
         "DOCKTEUR_PORT" => "8080",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 8080);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.port == 8080);
 }
 
 #[test]
@@ -114,8 +115,8 @@ fn service_port_should_be_read_from_common_environment_variable() {
         "PORT" => "8080",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 8080);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.port == 8080);
 }
 
 #[test]
@@ -125,16 +126,16 @@ fn port_specific_variable_should_have_precedence_on_common_variable() {
         "PORT" => "8080",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 8081);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.port == 8081);
 }
 
 #[test]
 fn service_port_should_fallback_on_default() {
     let result = crate::health_checker::load_configuration_from(map! {});
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 80);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.port == 80);
 }
 
 #[test]
@@ -143,7 +144,8 @@ fn malformed_service_port_should_not_be_accepted() {
         "PORT" => "MALFORMED",
     });
 
-    assert_err_eq!(result, InvalidConfiguration::Port("MALFORMED".to_string()));
+    let_assert!(Err(error) = result);
+    check!(error == InvalidConfiguration::Port("MALFORMED".to_string()));
 }
 
 #[test]
@@ -152,7 +154,8 @@ fn port_non_representable_in_16_bits_should_not_be_accepted() {
         "PORT" => "65536",
     });
 
-    assert_err_eq!(result, InvalidConfiguration::Port("65536".to_string()));
+    let_assert!(Err(error) = result);
+    check!(error == InvalidConfiguration::Port("65536".to_string()));
 }
 
 #[test]
@@ -161,7 +164,8 @@ fn port_0_should_not_be_accepted() {
         "PORT" => "0",
     });
 
-    assert_err_eq!(result, InvalidConfiguration::Port("0".to_string()));
+    let_assert!(Err(error) = result);
+    check!(error == InvalidConfiguration::Port("0".to_string()));
 }
 
 #[test]
@@ -170,8 +174,8 @@ fn empty_service_port_should_fallback_on_default() {
         "DOCKTEUR_PORT" => "",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 80);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.port == 80);
 }
 
 #[test]
@@ -180,8 +184,8 @@ fn blank_service_port_should_fallback_on_default() {
         "DOCKTEUR_PORT" => " ",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.port, 80);
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.port == 80);
 }
 
 #[test]
@@ -190,16 +194,16 @@ fn service_path_should_be_read_from_environment_variable() {
         "DOCKTEUR_PATH" => "/this/is/the/path",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/this/is/the/path");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.path == "/this/is/the/path");
 }
 
 #[test]
 fn service_path_should_fallback_on_default() {
     let result = crate::health_checker::load_configuration_from(map! {});
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.path == "/");
 }
 
 #[test]
@@ -208,8 +212,8 @@ fn empty_service_path_should_fallback_on_default() {
         "DOCKTEUR_PATH" => "",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.path == "/");
 }
 
 #[test]
@@ -218,8 +222,8 @@ fn blank_service_path_should_fallback_on_default() {
         "DOCKTEUR_PATH" => " ",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.path == "/");
 }
 
 #[test]
@@ -228,8 +232,8 @@ fn service_path_should_be_trimmed() {
         "DOCKTEUR_PATH" => " /this/is/the/path ",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.path, "/this/is/the/path");
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.path == "/this/is/the/path");
 }
 
 #[test]
@@ -238,16 +242,16 @@ fn timeout_should_be_read_from_environment_variable() {
         "DOCKTEUR_TIMEOUT_MILLIS" => "100",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(100));
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.timeout == Duration::from_millis(100));
 }
 
 #[test]
 fn timeout_should_fallback_on_default() {
     let result = crate::health_checker::load_configuration_from(map! {});
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(500));
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.timeout == Duration::from_millis(500));
 }
 
 #[test]
@@ -256,7 +260,8 @@ fn malformed_timeout_port_should_not_be_accepted() {
         "DOCKTEUR_TIMEOUT_MILLIS" => "MALFORMED",
     });
 
-    assert_err_eq!(result, InvalidConfiguration::Timeout("MALFORMED".to_string()));
+    let_assert!(Err(error) = result);
+    check!(error == InvalidConfiguration::Timeout("MALFORMED".to_string()));
 }
 
 #[test]
@@ -265,8 +270,8 @@ fn empty_timeout_should_fallback_on_default() {
         "DOCKTEUR_TIMEOUT_MILLIS" => "",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(500));
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.timeout == Duration::from_millis(500));
 }
 
 #[test]
@@ -275,8 +280,8 @@ fn blank_timeout_should_fallback_on_default() {
         "DOCKTEUR_TIMEOUT_MILLIS" => " ",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(500));
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.timeout == Duration::from_millis(500));
 }
 
 #[test]
@@ -285,6 +290,6 @@ fn timeout_should_be_trimmed() {
         "DOCKTEUR_TIMEOUT_MILLIS" => " 100 ",
     });
 
-    let configuration = assert_ok!(result);
-    assert_eq!(configuration.timeout, Duration::from_millis(100));
+    let_assert!(Ok(configuration) = result);
+    check!(configuration.timeout == Duration::from_millis(100));
 }
