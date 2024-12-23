@@ -1,7 +1,7 @@
 use crate::health_checker::Reason::{StatusCode, Timeout};
 use crate::health_checker::State::Healthy;
 use crate::health_checker::State::Unhealthy;
-use crate::health_checker::{default, get_health, Configuration};
+use crate::health_checker::{default, Configuration, HealthChecker, Http};
 use assert2::{check, let_assert};
 use rand::Rng;
 use std::net::TcpListener;
@@ -17,7 +17,7 @@ async fn a_healthy_service_should_be_reported() {
     let configuration = client_configuration_with_status_code(mock_server.address().port(), status_code);
     mock_server_health(&mock_server, status_code).await;
 
-    let result = get_health(&configuration).await;
+    let result = Http{}.check(&configuration).await;
 
     let_assert!(Ok(state) = result);
     check!(state == Healthy);
@@ -29,7 +29,7 @@ async fn an_unhealthy_service_should_be_reported() {
     let configuration = client_configuration(mock_server.address().port());
     mock_server_health(&mock_server, 500).await;
 
-    let result = get_health(&configuration).await;
+    let result = Http{}.check(&configuration).await;
 
     let_assert!(Ok(state) = result);
     check!(state == Unhealthy(StatusCode(500, "Internal Server Error".to_string())));
@@ -41,7 +41,7 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
     let configuration = client_configuration_with_timeout(mock_server.address().port(), 1);
     mock_server_health_with_delay(&mock_server, 500, 1_000).await;
 
-    let result = get_health(&configuration).await;
+    let result = Http{}.check(&configuration).await;
 
     let_assert!(Ok(state) = result);
     check!(state == Unhealthy(Timeout(Duration::from_millis(1))));
@@ -54,7 +54,7 @@ async fn on_network_error_the_service_should_be_reported_as_error() {
         .port();
     let configuration = client_configuration(unused_port);
 
-    let result = get_health(&configuration).await;
+    let result = Http{}.check(&configuration).await;
 
     let_assert!(Err(error) = result);
     check!(error.message.starts_with("network error"));
