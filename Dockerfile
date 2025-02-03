@@ -10,7 +10,7 @@ RUN cargo test
 RUN cargo build --release
 RUN upx --best --lzma target/release/dockteur
 
-FROM rust:1.84-alpine3.20 AS alpine-builder
+FROM rust:1.84-alpine3.21 AS alpine-builder
 RUN apk add upx musl-dev
 RUN rustup component add clippy
 USER nobody
