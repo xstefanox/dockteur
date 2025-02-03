@@ -101,6 +101,6 @@ fn client_configuration_with_timeout(port: u16, timeout: u64) -> Configuration {
 }
 
 fn a_status_code() -> u16 {
-    let mut rng = rand::thread_rng();
-    rng.gen_range(200..226)
+    let mut rng = rand::rng();
+    rng.random_range(200..226)
 }
