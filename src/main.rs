@@ -13,7 +13,8 @@ mod system;
 mod test_logger;
 mod test_macros;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     env_logger::Builder::from_default_env()
         .target(Target::Stdout)
         .filter_level(LevelFilter::Info)
@@ -21,7 +22,7 @@ fn main() {
         .format_target(false)
         .init();
 
-    let result = run_health_check();
+    let result = run_health_check().await;
 
     std::process::exit(result.to_exit_code());
 }

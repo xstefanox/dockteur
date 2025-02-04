@@ -6,6 +6,7 @@ use assert2::{check, let_assert};
 use rand::Rng;
 use std::net::TcpListener;
 use std::time::Duration;
+use http::Method;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -16,7 +17,7 @@ async fn a_healthy_service_should_be_reported() {
     let configuration = client_configuration_with_status_code(mock_server.address().port(), status_code);
     mock_server_health(&mock_server, status_code).await;
 
-    let result = get_health(&configuration);
+    let result = get_health(&configuration).await;
 
     let_assert!(Ok(state) = result);
     check!(state == Healthy);
@@ -28,7 +29,7 @@ async fn an_unhealthy_service_should_be_reported() {
     let configuration = client_configuration(mock_server.address().port());
     mock_server_health(&mock_server, 500).await;
 
-    let result = get_health(&configuration);
+    let result = get_health(&configuration).await;
 
     let_assert!(Ok(state) = result);
     check!(state == Unhealthy(StatusCode(500, "Internal Server Error".to_string())));
@@ -40,20 +41,20 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
     let configuration = client_configuration_with_timeout(mock_server.address().port(), 1);
     mock_server_health_with_delay(&mock_server, 500, 1_000).await;
 
-    let result = get_health(&configuration);
+    let result = get_health(&configuration).await;
 
     let_assert!(Ok(state) = result);
     check!(state == Unhealthy(Timeout(Duration::from_millis(1))));
 }
 
-#[test]
-fn on_network_error_the_service_should_be_reported_as_error() {
+#[tokio::test]
+async fn on_network_error_the_service_should_be_reported_as_error() {
     let unused_port = TcpListener::bind("localhost:0").unwrap()
         .local_addr().unwrap()
         .port();
     let configuration = client_configuration(unused_port);
 
-    let result = get_health(&configuration);
+    let result = get_health(&configuration).await;
 
     let_assert!(Err(error) = result);
     check!(error.message.starts_with("network error"));
@@ -81,7 +82,7 @@ fn client_configuration(port: u16) -> Configuration {
 
 fn client_configuration_with_status_code(port: u16, status_code: u16) -> Configuration {
     Configuration {
-        method: "GET".into(),
+        method: Method::GET,
         port,
         path: "/health".to_string(),
         timeout: default::TIMEOUT,
@@ -92,7 +93,7 @@ fn client_configuration_with_status_code(port: u16, status_code: u16) -> Configu
 
 fn client_configuration_with_timeout(port: u16, timeout: u64) -> Configuration {
     Configuration {
-        method: "GET".into(),
+        method: Method::GET,
         port,
         path: "/health".to_string(),
         timeout: Duration::from_millis(timeout),

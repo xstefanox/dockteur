@@ -1,10 +1,10 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::env;
+use std::str::FromStr;
 use std::time::Duration;
-
+use http::Method;
 use log::{debug, error, info};
-use ureq::OrAnyStatus;
+use reqwest::Client;
 use url::Url;
 use crate::health_checker::Reason::{StatusCode, Timeout};
 
@@ -22,8 +22,9 @@ mod configuration_test;
 
 mod default {
     use std::time::Duration;
+    use http::Method;
 
-    pub(super) const METHOD: &str = "GET";
+    pub(super) const METHOD: Method = Method::GET;
     pub(super) const PORT: u16 = 80;
     pub(super) const PATH: &str = "/";
     pub(super) const TIMEOUT: Duration = Duration::from_millis(500);
@@ -32,7 +33,7 @@ mod default {
 
 #[derive(Debug)]
 struct Configuration {
-    method: String,
+    method: Method,
     port: u16,
     path: String,
     timeout: Duration,
@@ -44,6 +45,7 @@ pub enum InvalidConfiguration {
     Port(String),
     Timeout(String),
     StatusCode(String),
+    Method(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -80,13 +82,16 @@ fn sanitize(value: &str) -> Option<String> {
         .filter(|s| !s.is_empty())
 }
 
-fn load_method_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfiguration> {
+fn load_method_from(vars: &HashMap<String, String>) -> Result<Method, InvalidConfiguration> {
     match vars.get(env!("METHOD")) {
-        None => Ok(default::METHOD.into()),
+        None => Ok(default::METHOD),
         Some(value) => {
             match sanitize(value) {
-                None => Ok(default::METHOD.to_string()),
-                Some(value) => Ok(value.clone()),
+                None => Ok(default::METHOD),
+                Some(value) => {
+                    Method::from_str(value.as_str())
+                        .map_err(|_| InvalidConfiguration::Method(value))
+                },
             }
         }
     }
@@ -164,30 +169,38 @@ fn load_configuration_from(vars: HashMap<String, String>) -> Result<Configuratio
     Ok(Configuration { method, port, path, timeout, status_code })
 }
 
-fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
+async fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
     let mut url = Url::parse("http://localhost").unwrap();
     url.set_port(Some(configuration.port)).unwrap();
     url.set_path(&configuration.path);
-    let agent = ureq::AgentBuilder::new()
-        .timeout_read(configuration.timeout)
-        .build();
-    let response = agent
-        .request(configuration.method.borrow(), url.as_ref())
-        .call()
-        .or_any_status();
+
+    let client = Client::builder()
+        .timeout(configuration.timeout)
+        .build()
+        .unwrap();
+
+    let response = client
+        .request(configuration.method.clone(), url.as_ref())
+        .send()
+        .await;
 
     debug!("received result from {}: {:?}", url, response);
 
-    let result = match response {
+    let result: Result<State, NetworkError> = match response {
         Ok(value) => {
             if value.status() == configuration.status_code {
                 Ok(State::Healthy)
             } else {
-                Ok(State::Unhealthy(StatusCode(value.status(), value.status_text().to_string())))
+                let reason = value
+                    .status()
+                    .canonical_reason()
+                    .unwrap_or("")
+                    .to_string();
+                Ok(State::Unhealthy(StatusCode(value.status().as_u16(), reason)))
             }
         }
         Err(e) => {
-            if e.to_string().contains("timed out reading response") {
+            if e.is_timeout() {
                 Ok(State::Unhealthy(Timeout(configuration.timeout)))
             } else {
                 Err(NetworkError {
@@ -205,7 +218,7 @@ fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
     result
 }
 
-pub fn run_health_check() -> Result<State, HeathcheckFailure> {
+pub async fn run_health_check() -> Result<State, HeathcheckFailure> {
     let vars: HashMap<String, String> = env::vars().collect();
 
     let configuration = load_configuration_from(vars)
@@ -215,7 +228,7 @@ pub fn run_health_check() -> Result<State, HeathcheckFailure> {
             }
         })?;
 
-    get_health(&configuration).map_err(|err| {
+    get_health(&configuration).await.map_err(|err| {
         HeathcheckFailure {
             message: err.message,
         }

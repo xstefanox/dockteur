@@ -32,6 +32,7 @@ impl Display for InvalidConfiguration {
             InvalidConfiguration::Port(value) => write!(f, "invalid port '{}'", value),
             InvalidConfiguration::Timeout(value) => write!(f, "invalid timeout '{}'", value),
             InvalidConfiguration::StatusCode(value) => write!(f, "invalid status code '{}'", value),
+            InvalidConfiguration::Method(value) =>  write!(f, "invalid method '{}'", value),
         }
     }
 }

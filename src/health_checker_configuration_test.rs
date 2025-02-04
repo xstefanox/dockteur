@@ -2,6 +2,7 @@ use crate::health_checker::InvalidConfiguration;
 use crate::map;
 use assert2::{check, let_assert};
 use std::time::Duration;
+use http::Method;
 
 #[test]
 fn service_method_should_be_read_from_environment_variable() {
@@ -10,7 +11,7 @@ fn service_method_should_be_read_from_environment_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == "HEAD");
+    check!(configuration.method == Method::HEAD);
 }
 
 #[test]
@@ -18,7 +19,7 @@ fn service_method_should_fallback_on_default() {
     let result = crate::health_checker::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == "GET");
+    check!(configuration.method == Method::GET);
 }
 
 #[test]
@@ -28,7 +29,7 @@ fn empty_service_method_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == "GET");
+    check!(configuration.method == Method::GET);
 }
 
 #[test]
@@ -38,7 +39,7 @@ fn blank_service_method_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == "GET");
+    check!(configuration.method == Method::GET);
 }
 
 #[test]
@@ -48,7 +49,17 @@ fn service_method_should_be_trimmed() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == "POST");
+    check!(configuration.method == Method::POST);
+}
+
+#[test]
+fn malformed_service_method_should_be_reported() {
+    let result = crate::health_checker::load_configuration_from(map! {
+        "DOCKTEUR_METHOD" => "DO@SOMETHING",
+    });
+
+    let_assert!(Err(error) = result);
+    check!(error == InvalidConfiguration::Method("DO@SOMETHING".to_string()));
 }
 
 #[test]

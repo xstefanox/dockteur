@@ -48,3 +48,12 @@ fn invalid_status_code_message() {
 
     assert_eq!("invalid status code 'MALFORMED'", result)
 }
+
+#[test]
+fn invalid_method_message() {
+    let err = InvalidConfiguration::Method(String::from("MALFORMED"));
+
+    let result = format!("{}", err);
+
+    assert_eq!("invalid method 'MALFORMED'", result)
+}
