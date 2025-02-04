@@ -2,9 +2,10 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::env;
 use std::time::Duration;
-
+use http::{Method, Request};
 use log::{debug, error, info};
-use ureq::OrAnyStatus;
+use ureq::{Agent, RequestBuilder};
+use ureq::typestate::WithoutBody;
 use url::Url;
 use crate::health_checker::Reason::{StatusCode, Timeout};
 
@@ -168,13 +169,28 @@ fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
     let mut url = Url::parse("http://localhost").unwrap();
     url.set_port(Some(configuration.port)).unwrap();
     url.set_path(&configuration.path);
-    let agent = ureq::AgentBuilder::new()
-        .timeout_read(configuration.timeout)
-        .build();
-    let response = agent
-        .request(configuration.method.borrow(), url.as_ref())
-        .call()
-        .or_any_status();
+
+    ureq::get("")?;
+    RequestBuilder::<WithoutBody>::new(Agent::new_with_defaults(), Method::GET, uri);
+
+    // RequestBuilder::<WithoutBody>::method_ref()
+
+
+    let agent: Agent = Agent::config_builder()
+        .timeout_global(Some(configuration.timeout))
+        .build()
+        .into();
+
+    let request: Request<WithoutBody> = Request::builder()
+        .method(configuration.method.borrow())
+        .into();
+
+    let response = agent.run(request)?;
+
+    // let response = agent
+    //     .request(configuration.method.borrow(), url.as_ref())
+    //     .call()
+    //     .or_any_status();
 
     debug!("received result from {}: {:?}", url, response);
 
