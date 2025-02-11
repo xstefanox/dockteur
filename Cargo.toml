@@ -13,7 +13,7 @@ http = "1.1.0"
 
 [dev-dependencies]
 assert2 = "0.3.15"
-ctor = "0.2.7"
+ctor = "0.3.0"
 rand = "0.9.0"
 rstest = "0.24.0"
 wiremock = "0.6.0"
