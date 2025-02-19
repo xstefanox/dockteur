@@ -14,20 +14,14 @@ use url::Url;
 use mockall::automock;
 
 #[cfg(test)]
-#[path = "./http_health_checker_test.rs"]
-mod http_test;
-
-#[cfg(test)]
-#[path = "./redis_health_checker_test.rs"]
-mod redis_test;
-
-#[cfg(test)]
 #[path = "./health_checker_string_test.rs"]
 mod string_test;
 
 #[cfg(test)]
 #[path = "./health_checker_configuration_test.rs"]
 mod configuration_test;
+
+mod http_health_checker;
 
 mod default {
     use std::time::Duration;

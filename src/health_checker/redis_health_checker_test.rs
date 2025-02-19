@@ -1,4 +1,4 @@
-use crate::health_checker::redis_test::toxiproxy::{get_client, ToxiProxyContainer};
+use crate::health_checker::http_health_checker::redis_test::toxiproxy::{get_client, ToxiProxyContainer};
 use crate::health_checker::Reason::{StatusCode, Timeout};
 use crate::health_checker::State::{Healthy, Unhealthy};
 use crate::health_checker::{
@@ -18,7 +18,7 @@ use testcontainers_modules::testcontainers::{GenericImage, Image, ImageExt};
 use tokio::time::{sleep, sleep_until};
 
 #[cfg(test)]
-#[path = "./toxiproxy.rs"]
+#[path = "toxiproxy.rs"]
 mod toxiproxy;
 
 #[tokio::test]
