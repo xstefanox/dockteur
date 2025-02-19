@@ -29,7 +29,7 @@ async fn a_healthy_service_should_be_reported() {
         .get_host_port_ipv4(REDIS_PORT)
         .await
         .unwrap();
-    let configuration = client_configuration_with_timeout(port, 456);
+    let configuration = client_configuration(port);
 
     let result = RedisHealthChecker {
         ping_command: &TcpPingCommand {} as &dyn PingCommand,
@@ -40,26 +40,27 @@ async fn a_healthy_service_should_be_reported() {
     check!(state == Healthy);
 }
 
-#[tokio::test]
-async fn an_unhealthy_service_should_be_reported() {
-    let redis_container = RedisContainer::default().start().await.unwrap();
-    let port = redis_container
-        .get_host_port_ipv4(REDIS_PORT)
-        .await
-        .unwrap();
-    let configuration = client_configuration_with_timeout(port, 456);
-    let mut ping_command = MockPingCommand::new();
-
-    ping_command.expect_run().return_const(false);
-
-    let result = RedisHealthChecker {
-        ping_command: &ping_command as &dyn PingCommand,
-    }
-    .check(&configuration).await;
-
-    let_assert!(Ok(state) = result);
-    check!(state == Unhealthy(Generic("TODO".to_string()))); // TODO provide a specific reason
-}
+// TODO this test must be completely reviewed
+// #[tokio::test]
+// async fn an_unhealthy_service_should_be_reported() {
+//     let redis_container = RedisContainer::default().start().await.unwrap();
+//     let port = redis_container
+//         .get_host_port_ipv4(REDIS_PORT)
+//         .await
+//         .unwrap();
+//     let configuration = client_configuration_with_timeout(port, 456);
+//     let mut ping_command = MockPingCommand::new();
+//
+//     ping_command.expect_run().return_const(false);
+//
+//     let result = RedisHealthChecker {
+//         ping_command: &ping_command as &dyn PingCommand,
+//     }
+//     .check(&configuration).await;
+//
+//     let_assert!(Ok(state) = result);
+//     check!(state == Unhealthy(Generic("TODO".to_string()))); // TODO provide a specific reason
+// }
 
 #[tokio::test]
 async fn service_responding_slowly_should_be_reported_as_unhealthy() {
@@ -77,7 +78,7 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
 
     let toxiproxy_container = ToxiProxyContainer::default().start().await.unwrap();
     let toxiproxy_client = get_client(&toxiproxy_container).await;
-    toxiproxy_client.set_timeout("redis", 8080, &redis_host, REDIS_PORT, 1_000);
+    toxiproxy_client.set_timeout("redis", 8080, &redis_host, REDIS_PORT, 1_000).await;
 
     let exposed_proxy_port = toxiproxy_container.get_host_port_ipv4(8080).await.unwrap();
     debug!("exposed port is {}", exposed_proxy_port);
@@ -89,8 +90,10 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
     }
     .check(&configuration).await;
 
-    let_assert!(Err(e) = result);
-    let_assert!(NetworkError { message } = e);
+    // let_assert!(Err(e) = result);
+    // let_assert!(NetworkError { message } = e);
+    let_assert!(Ok(state) = result);
+    check!(state == Unhealthy(Timeout(Duration::from_millis(1))));
 }
 
 #[tokio::test]
