@@ -9,6 +9,7 @@ use std::time::Duration;
 use http::Method;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
+use crate::health_checker::test_fixtures::{client_configuration, client_configuration_with_status_code, client_configuration_with_timeout};
 
 #[tokio::test]
 async fn a_healthy_service_should_be_reported() {
@@ -74,31 +75,6 @@ async fn mock_server_health_with_delay(mock_server: &MockServer, status_code: u1
         .respond_with(ResponseTemplate::new(status_code).set_delay(Duration::from_millis(delay_millis)))
         .mount(mock_server)
         .await
-}
-
-fn client_configuration(port: u16) -> Configuration {
-    client_configuration_with_timeout(port, default::TIMEOUT.as_millis() as u64)
-}
-
-fn client_configuration_with_status_code(port: u16, status_code: u16) -> Configuration {
-    Configuration {
-        method: Method::GET,
-        port,
-        path: "/health".to_string(),
-        timeout: default::TIMEOUT,
-        status_code,
-    }
-}
-
-
-fn client_configuration_with_timeout(port: u16, timeout: u64) -> Configuration {
-    Configuration {
-        method: Method::GET,
-        port,
-        path: "/health".to_string(),
-        timeout: Duration::from_millis(timeout),
-        status_code: 200,
-    }
 }
 
 fn a_status_code() -> u16 {

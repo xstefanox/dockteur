@@ -23,6 +23,9 @@ mod configuration_test;
 
 mod http_health_checker;
 
+#[cfg(test)]
+mod test_fixtures;
+
 mod default {
     use std::time::Duration;
     use http::Method;

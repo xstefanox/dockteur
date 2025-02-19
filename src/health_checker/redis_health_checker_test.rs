@@ -16,6 +16,7 @@ use testcontainers_modules::testcontainers::core::WaitFor;
 use testcontainers_modules::testcontainers::runners::AsyncRunner;
 use testcontainers_modules::testcontainers::{GenericImage, Image, ImageExt};
 use tokio::time::{sleep, sleep_until};
+use crate::health_checker::test_fixtures::{client_configuration, client_configuration_with_timeout};
 
 #[cfg(test)]
 #[path = "toxiproxy.rs"]
@@ -108,26 +109,4 @@ async fn on_network_error_the_service_should_be_reported_as_error() {
 
     let_assert!(Err(error) = result);
     check!(error.message.starts_with("network error"));
-}
-
-// TODO deduplicate
-fn client_configuration_with_timeout(port: u16, timeout: u64) -> Configuration {
-    Configuration {
-        method: Method::GET,
-        port,
-        path: "/health".to_string(),
-        timeout: Duration::from_millis(timeout),
-        status_code: 200,
-    }
-}
-
-// TODO deduplicate
-fn client_configuration(port: u16) -> Configuration {
-    Configuration {
-        method: Method::GET,
-        port,
-        path: "/health".to_string(),
-        timeout: default::TIMEOUT,
-        status_code: 200,
-    }
 }
