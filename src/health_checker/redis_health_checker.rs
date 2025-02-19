@@ -1,4 +1,4 @@
-use crate::health_checker::Reason::{StatusCode, Timeout};
+use crate::health_checker::Reason::{Generic, Timeout};
 use crate::health_checker::{Configuration, HealthChecker, NetworkError, State};
 use log::{debug, error, info};
 use reqwest::Client;
@@ -34,11 +34,9 @@ impl HealthChecker for Http {
                 if value.status() == configuration.status_code {
                     Ok(State::Healthy)
                 } else {
-                    let reason = value.status().canonical_reason().unwrap_or("").to_string();
-                    Ok(State::Unhealthy(StatusCode(
-                        value.status().as_u16(),
-                        reason,
-                    )))
+                    // let reason = value.status().canonical_reason().unwrap_or("").to_string();
+
+                    Ok(State::Unhealthy(Generic(value.status().to_string())))
                 }
             }
             Err(e) => {

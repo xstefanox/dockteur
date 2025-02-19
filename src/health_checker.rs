@@ -4,7 +4,7 @@ use std::str::FromStr;
 use std::time::Duration;
 use http::Method;
 
-use crate::health_checker::Reason::{StatusCode};
+use crate::health_checker::Reason::Generic;
 use redis::{Connection, ConnectionLike};
 use url::Url;
 
@@ -64,7 +64,7 @@ pub enum State {
 #[derive(Debug, PartialEq)]
 pub enum Reason {
     Timeout(Duration),
-    StatusCode(u16, String),
+    Generic(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -209,7 +209,7 @@ impl<'a> HealthChecker for RedisHealthChecker<'a> {
 
         match command_result {
             true => Ok(State::Healthy),
-            false => Ok(State::Unhealthy(StatusCode(0, String::from("TODO")))),
+            false => Ok(State::Unhealthy(Generic(String::from("TODO")))),
         }
     }
 }

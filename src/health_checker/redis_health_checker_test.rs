@@ -1,5 +1,5 @@
 use crate::health_checker::redis_health_checker::redis_test::toxiproxy::{get_client, ToxiProxyContainer};
-use crate::health_checker::Reason::{StatusCode, Timeout};
+use crate::health_checker::Reason::{Generic, Timeout};
 use crate::health_checker::State::{Healthy, Unhealthy};
 use crate::health_checker::{
     default, Configuration, HealthChecker, MockPingCommand, NetworkError, PingCommand,
@@ -58,7 +58,7 @@ async fn an_unhealthy_service_should_be_reported() {
     .check(&configuration).await;
 
     let_assert!(Ok(state) = result);
-    check!(state == Unhealthy(StatusCode(0, String::from("TODO")))); // TODO provide a specific reason
+    check!(state == Unhealthy(Generic("TODO".to_string()))); // TODO provide a specific reason
 }
 
 #[tokio::test]

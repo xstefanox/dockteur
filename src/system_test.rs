@@ -2,7 +2,7 @@ use rstest::rstest;
 use crate::ExitCode;
 use crate::health_checker::InvalidConfiguration;
 use crate::health_checker::Reason;
-use crate::health_checker::Reason::{Timeout, StatusCode};
+use crate::health_checker::Reason::{Timeout, Generic};
 use crate::State::{Healthy, Unhealthy};
 use std::time::Duration;
 
@@ -15,7 +15,7 @@ fn healthy_state_should_be_converted_to_process_exit_status() {
 
 #[rstest]
 #[case::timeout(Timeout(Duration::default()))]
-#[case::status_code(StatusCode(500, "Internal server error".to_string()))]
+#[case::generic(Generic("500 Internal server error".to_string()))]
 fn unhealthy_state_should_be_converted_to_process_exit_status(#[case] reason: Reason) {
     let status = Ok(Unhealthy(reason)).to_exit_code();
 

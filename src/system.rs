@@ -3,7 +3,7 @@
 mod test;
 
 use std::fmt::{Display, Formatter};
-use Reason::{StatusCode, Timeout};
+use Reason::{Generic, Timeout};
 use State::{Healthy, Unhealthy};
 use crate::{InvalidConfiguration, State};
 use crate::health_checker::{HeathcheckFailure, Reason};
@@ -16,10 +16,8 @@ impl Display for State {
                 write!(f, "unhealthy: ")?;
 
                 match reason {
-                    StatusCode(value, text) => write!(f, "status code {} {}", value, text),
-                    Timeout(value) => {
-                        write!(f, "timed out after {:?}", value)
-                    },
+                    Timeout(value) => write!(f, "timed out after {:?}", value),
+                    Generic(value) => write!(f, "{}", value),
                 }
             }
         }
