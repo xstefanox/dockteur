@@ -1,4 +1,4 @@
-use crate::health_checker::http_health_checker::redis_test::toxiproxy::{get_client, ToxiProxyContainer};
+use crate::health_checker::redis_health_checker::redis_test::toxiproxy::{get_client, ToxiProxyContainer};
 use crate::health_checker::Reason::{StatusCode, Timeout};
 use crate::health_checker::State::{Healthy, Unhealthy};
 use crate::health_checker::{

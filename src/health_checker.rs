@@ -25,6 +25,7 @@ mod http_health_checker;
 
 #[cfg(test)]
 mod test_fixtures;
+mod redis_health_checker;
 
 mod default {
     use std::time::Duration;
