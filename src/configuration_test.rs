@@ -1,4 +1,5 @@
-use crate::map;
+use std::num::NonZeroU16;
+use crate::{map, u16nz};
 use assert2::{check, let_assert};
 use std::time::Duration;
 use crate::configuration::{sanitize, InvalidConfiguration, Method, Path, Port, StatusCode, Timeout};
@@ -98,7 +99,7 @@ fn expected_status_code_should_be_read_from_environment_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.status_code == StatusCode(201));
+    check!(configuration.status_code == StatusCode(u16nz!(201)));
 }
 
 #[test]
@@ -106,7 +107,7 @@ fn expected_status_code_should_fallback_on_default() {
     let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.status_code == StatusCode(200));
+    check!(configuration.status_code == StatusCode(u16nz!(200)));
 }
 
 #[test]
@@ -126,7 +127,7 @@ fn empty_status_code_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.status_code == StatusCode(200));
+    check!(configuration.status_code == StatusCode(u16nz!(200)));
 }
 
 #[test]
@@ -136,7 +137,17 @@ fn blank_status_code_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.status_code == StatusCode(200));
+    check!(configuration.status_code == StatusCode(u16nz!(200)));
+}
+
+#[test]
+fn status_code_0_should_not_be_accepted() {
+    let result = crate::configuration::load_configuration_from(map! {
+        "DOCKTEUR_STATUS_CODE" => "0",
+    });
+
+    let_assert!(Err(error) = result);
+    check!(error == InvalidConfiguration::StatusCode("0".to_string()));
 }
 
 #[test]
@@ -146,7 +157,7 @@ fn service_port_should_be_read_from_environment_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == Port(8080));
+    check!(configuration.port == Port(u16nz!(8080)));
 }
 
 #[test]
@@ -156,7 +167,7 @@ fn service_port_should_be_read_from_common_environment_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == Port(8080));
+    check!(configuration.port == Port(u16nz!(8080)));
 }
 
 #[test]
@@ -167,7 +178,7 @@ fn port_specific_variable_should_have_precedence_on_common_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == Port(8081));
+    check!(configuration.port == Port(u16nz!(8081)));
 }
 
 #[test]
@@ -175,7 +186,7 @@ fn service_port_should_fallback_on_default() {
     let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == Port(80));
+    check!(configuration.port == Port(u16nz!(80)));
 }
 
 #[test]
@@ -215,7 +226,7 @@ fn empty_service_port_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == Port(80));
+    check!(configuration.port == Port(u16nz!(80)));
 }
 
 #[test]
@@ -225,7 +236,7 @@ fn blank_service_port_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == Port(80));
+    check!(configuration.port == Port(u16nz!(80)));
 }
 
 #[test]

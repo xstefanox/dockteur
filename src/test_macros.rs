@@ -12,3 +12,10 @@ macro_rules! map {
         }
     };
 }
+
+#[macro_export]
+macro_rules! u16nz {
+    ($a:expr) => {
+        NonZeroU16::new($a).unwrap()
+    };
+}
