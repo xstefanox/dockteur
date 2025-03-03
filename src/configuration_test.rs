@@ -1,8 +1,7 @@
 use crate::map;
 use assert2::{check, let_assert};
 use std::time::Duration;
-use http::Method;
-use crate::configuration::{sanitize, InvalidConfiguration};
+use crate::configuration::{sanitize, InvalidConfiguration, Method, Path, Port, StatusCode, Timeout};
 
 #[test]
 fn non_empty_string_sanitization() {
@@ -26,13 +25,22 @@ fn blank_string_sanitization() {
 }
 
 #[test]
+fn test_method_conversion_from_http_method() {
+    let http_method = http::Method::GET;
+
+    let result = Method(http_method);
+
+    check!(result == Method(http::Method::GET));
+}
+
+#[test]
 fn service_method_should_be_read_from_environment_variable() {
     let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_METHOD" => "HEAD",
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == Method::HEAD);
+    check!(configuration.method == Method(http::Method::HEAD));
 }
 
 #[test]
@@ -40,7 +48,7 @@ fn service_method_should_fallback_on_default() {
     let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == Method::GET);
+    check!(configuration.method == Method(http::Method::GET));
 }
 
 #[test]
@@ -50,7 +58,7 @@ fn empty_service_method_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == Method::GET);
+    check!(configuration.method == Method(http::Method::GET));
 }
 
 #[test]
@@ -60,7 +68,7 @@ fn blank_service_method_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == Method::GET);
+    check!(configuration.method == Method(http::Method::GET));
 }
 
 #[test]
@@ -70,7 +78,7 @@ fn service_method_should_be_trimmed() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.method == Method::POST);
+    check!(configuration.method == Method(http::Method::POST));
 }
 
 #[test]
@@ -90,7 +98,7 @@ fn expected_status_code_should_be_read_from_environment_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.status_code == 201);
+    check!(configuration.status_code == StatusCode(201));
 }
 
 #[test]
@@ -98,7 +106,7 @@ fn expected_status_code_should_fallback_on_default() {
     let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.status_code == 200);
+    check!(configuration.status_code == StatusCode(200));
 }
 
 #[test]
@@ -118,7 +126,7 @@ fn empty_status_code_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.status_code == 200);
+    check!(configuration.status_code == StatusCode(200));
 }
 
 #[test]
@@ -128,7 +136,7 @@ fn blank_status_code_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.status_code == 200);
+    check!(configuration.status_code == StatusCode(200));
 }
 
 #[test]
@@ -138,7 +146,7 @@ fn service_port_should_be_read_from_environment_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == 8080);
+    check!(configuration.port == Port(8080));
 }
 
 #[test]
@@ -148,7 +156,7 @@ fn service_port_should_be_read_from_common_environment_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == 8080);
+    check!(configuration.port == Port(8080));
 }
 
 #[test]
@@ -159,7 +167,7 @@ fn port_specific_variable_should_have_precedence_on_common_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == 8081);
+    check!(configuration.port == Port(8081));
 }
 
 #[test]
@@ -167,7 +175,7 @@ fn service_port_should_fallback_on_default() {
     let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == 80);
+    check!(configuration.port == Port(80));
 }
 
 #[test]
@@ -207,7 +215,7 @@ fn empty_service_port_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == 80);
+    check!(configuration.port == Port(80));
 }
 
 #[test]
@@ -217,7 +225,7 @@ fn blank_service_port_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.port == 80);
+    check!(configuration.port == Port(80));
 }
 
 #[test]
@@ -227,7 +235,7 @@ fn service_path_should_be_read_from_environment_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.path == "/this/is/the/path");
+    check!(configuration.path == Path::from("/this/is/the/path"));
 }
 
 #[test]
@@ -235,7 +243,7 @@ fn service_path_should_fallback_on_default() {
     let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.path == "/");
+    check!(configuration.path == Path::from("/"));
 }
 
 #[test]
@@ -245,7 +253,7 @@ fn empty_service_path_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.path == "/");
+    check!(configuration.path == Path::from("/"));
 }
 
 #[test]
@@ -255,7 +263,7 @@ fn blank_service_path_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.path == "/");
+    check!(configuration.path == Path::from("/"));
 }
 
 #[test]
@@ -265,7 +273,7 @@ fn service_path_should_be_trimmed() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.path == "/this/is/the/path");
+    check!(configuration.path == Path::from("/this/is/the/path"));
 }
 
 #[test]
@@ -275,7 +283,7 @@ fn timeout_should_be_read_from_environment_variable() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.timeout == Duration::from_millis(100));
+    check!(configuration.timeout == Timeout(Duration::from_millis(100)));
 }
 
 #[test]
@@ -283,7 +291,7 @@ fn timeout_should_fallback_on_default() {
     let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.timeout == Duration::from_millis(500));
+    check!(configuration.timeout == Timeout(Duration::from_millis(500)));
 }
 
 #[test]
@@ -303,7 +311,7 @@ fn empty_timeout_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.timeout == Duration::from_millis(500));
+    check!(configuration.timeout == Timeout(Duration::from_millis(500)));
 }
 
 #[test]
@@ -313,7 +321,7 @@ fn blank_timeout_should_fallback_on_default() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.timeout == Duration::from_millis(500));
+    check!(configuration.timeout == Timeout(Duration::from_millis(500)));
 }
 
 #[test]
@@ -323,5 +331,11 @@ fn timeout_should_be_trimmed() {
     });
 
     let_assert!(Ok(configuration) = result);
-    check!(configuration.timeout == Duration::from_millis(100));
+    check!(configuration.timeout == Timeout(Duration::from_millis(100)));
+}
+
+impl From<&str> for Path {
+    fn from(value: &str) -> Self {
+        Path(String::from(value))
+    }
 }

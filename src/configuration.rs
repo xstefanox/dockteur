@@ -1,4 +1,3 @@
-use http::Method;
 use std::time::Duration;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -7,27 +6,105 @@ use std::str::FromStr;
 #[path = "./configuration_test.rs"]
 mod test;
 
-// REFACTOR replace with an implementation of the Default trait
-pub(crate) mod default {
-    use http::Method;
-    use std::time::Duration;
+#[cfg(test)]
+#[path = "./configuration_fixtures.rs"]
+pub(crate) mod fixtures;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub(crate) struct Method(http::Method);
 
-    pub(super) const METHOD: Method = Method::GET;
-    pub(super) const PORT: u16 = 80;
-    pub(super) const PATH: &str = "/";
-    // REFACTOR using the Default trait should allow restricting the visibility
-    pub(crate) const TIMEOUT: Duration = Duration::from_millis(500);
-    pub(super) const STATUS_CODE: u16 = 200;
+impl From<Method> for reqwest::Method {
+
+    fn from(value: Method) -> Self {
+        value.0
+    }
 }
 
-#[derive(Debug)]
+impl Default for Method {
+
+    fn default() -> Self {
+        Method(http::Method::GET)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub(crate) struct Port(u16);
+
+impl From<Port> for u16 {
+
+    fn from(value: Port) -> Self {
+        value.0
+    }
+}
+
+impl Default for Port {
+
+    fn default() -> Self {
+        Port(80)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub(crate) struct Path(String);
+
+impl From<Path> for String {
+
+    fn from(value: Path) -> Self {
+        value.0
+    }
+}
+
+impl Default for Path {
+
+    fn default() -> Self {
+        Path(String::from("/"))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub(crate) struct Timeout(Duration);
+
+impl From<Timeout> for Duration {
+
+    fn from(value: Timeout) -> Self {
+        value.0
+    }
+}
+
+impl Default for Timeout {
+    fn default() -> Self {
+        Timeout(Duration::from_millis(500))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub(crate) struct StatusCode(u16);
+
+impl PartialEq<StatusCode> for http::status::StatusCode {
+
+    fn eq(&self, other: &StatusCode) -> bool {
+        *self == other.0
+    }
+}
+
+impl Default for StatusCode {
+    fn default() -> Self {
+        StatusCode(200)
+    }
+}
+
+#[derive(Debug, Default)]
 pub(crate) struct Configuration {
     pub(crate) method: Method,
-    pub(crate) port: u16,
-    pub(crate) path: String,
-    pub(crate) timeout: Duration,
-    pub(crate) status_code: u16,
+    pub(crate) port: Port,
+    pub(crate) path: Path,
+    pub(crate) timeout: Timeout,
+    pub(crate) status_code: StatusCode,
 }
 
 #[derive(Debug, PartialEq)]
@@ -52,12 +129,13 @@ pub fn sanitize(value: &str) -> Option<String> {
 
 fn load_method_from(vars: &HashMap<String, String>) -> Result<Method, InvalidConfiguration> {
     match vars.get(env!("METHOD")) {
-        None => Ok(default::METHOD),
+        None => Ok(Method::default()),
         Some(value) => {
             match sanitize(value) {
-                None => Ok(default::METHOD),
+                None => Ok(Method::default()),
                 Some(value) => {
-                    Method::from_str(value.as_str())
+                    http::Method::from_str(value.as_str())
+                        .map(Method)
                         .map_err(|_| InvalidConfiguration::Method(value))
                 },
             }
@@ -65,19 +143,19 @@ fn load_method_from(vars: &HashMap<String, String>) -> Result<Method, InvalidCon
     }
 }
 
-fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfiguration> {
+fn load_port_from(vars: &HashMap<String, String>) -> Result<Port, InvalidConfiguration> {
     let env_var = vars.get(env!("PORT"))
         .or(vars.get("PORT"));
 
     match env_var {
-        None => Ok(default::PORT),
+        None => Ok(Port::default()),
         Some(value) => {
             match sanitize(value) {
-                None => Ok(default::PORT),
+                None => Ok(Port::default()),
                 Some(value) => match value.parse::<u16>() {
                     Ok(number) => match number {
                         0 => Err(InvalidConfiguration::Port(value.clone())),
-                        _ => Ok(number),
+                        _ => Ok(Port(number)),
                     },
                     Err(_) => Err(InvalidConfiguration::Port(value.clone())),
                 }
@@ -86,26 +164,26 @@ fn load_port_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfigur
     }
 }
 
-fn load_path_from(vars: &HashMap<String, String>) -> Result<String, InvalidConfiguration> {
+fn load_path_from(vars: &HashMap<String, String>) -> Result<Path, InvalidConfiguration> {
     match vars.get(env!("PATH")) {
-        None => Ok(default::PATH.to_string()),
+        None => Ok(Path::default()),
         Some(value) => {
             match sanitize(value) {
-                None => Ok(default::PATH.to_string()),
-                Some(value) => Ok(value.clone()),
+                None => Ok(Path::default()),
+                Some(value) => Ok(Path(value)),
             }
         }
     }
 }
 
-fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, InvalidConfiguration> {
+fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Timeout, InvalidConfiguration> {
     match vars.get(env!("TIMEOUT_MILLIS")) {
-        None => Ok(default::TIMEOUT),
+        None => Ok(Timeout::default()),
         Some(value) => {
             match sanitize(value) {
-                None => Ok(default::TIMEOUT),
+                None => Ok(Timeout::default()),
                 Some(value) => match value.parse::<u64>() {
-                    Ok(value) => Ok(Duration::from_millis(value)),
+                    Ok(value) => Ok(Timeout(Duration::from_millis(value))),
                     Err(_) => Err(InvalidConfiguration::Timeout(value)),
                 }
             }
@@ -113,14 +191,14 @@ fn load_timeout_from(vars: &HashMap<String, String>) -> Result<Duration, Invalid
     }
 }
 
-fn load_status_code_from(vars: &HashMap<String, String>) -> Result<u16, InvalidConfiguration> {
+fn load_status_code_from(vars: &HashMap<String, String>) -> Result<StatusCode, InvalidConfiguration> {
     match vars.get(env!("STATUS_CODE")) {
-        None => Ok(default::STATUS_CODE),
+        None => Ok(StatusCode::default()),
         Some(value) => {
             match sanitize(value) {
-                None => Ok(default::STATUS_CODE),
+                None => Ok(StatusCode::default()),
                 Some(value) => match value.parse::<u16>() {
-                    Ok(value) => Ok(value),
+                    Ok(value) => Ok(StatusCode(value)),
                     Err(_) => Err(InvalidConfiguration::StatusCode(value)),
                 }
             }

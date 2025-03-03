@@ -6,7 +6,7 @@ use url::Url;
 use std::time::Duration;
 use crate::configuration;
 use crate::configuration::Configuration;
-use crate::health_checker::Reason::{StatusCode, Timeout};
+use crate::health_checker::Reason::{UnexpectedStatusCode, TimedOut};
 
 #[cfg(test)]
 #[path = "./health_checker_test.rs"]
@@ -20,8 +20,8 @@ pub(crate) enum State {
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum Reason {
-    Timeout(Duration),
-    StatusCode(u16, String),
+    TimedOut(Duration),
+    UnexpectedStatusCode(u16, String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -36,16 +36,17 @@ pub(crate) struct HeathcheckFailure {
 
 async fn get_health(configuration: &Configuration) -> Result<State, NetworkError> {
     let mut url = Url::parse("http://localhost").unwrap();
-    url.set_port(Some(configuration.port)).unwrap();
-    url.set_path(&configuration.path);
+    url.set_port(Some(configuration.port.into())).unwrap();
+    let x: String = configuration.path.clone().into();
+    url.set_path(&x);
 
     let client = Client::builder()
-        .timeout(configuration.timeout)
+        .timeout(configuration.timeout.into())
         .build()
         .unwrap();
 
     let response = client
-        .request(configuration.method.clone(), url.as_ref())
+        .request(configuration.method.clone().into(), url.as_ref())
         .send()
         .await;
 
@@ -61,12 +62,12 @@ async fn get_health(configuration: &Configuration) -> Result<State, NetworkError
                     .canonical_reason()
                     .unwrap_or("")
                     .to_string();
-                Ok(State::Unhealthy(StatusCode(value.status().as_u16(), reason)))
+                Ok(State::Unhealthy(UnexpectedStatusCode(value.status().as_u16(), reason)))
             }
         }
         Err(e) => {
             if e.is_timeout() {
-                Ok(State::Unhealthy(Timeout(configuration.timeout)))
+                Ok(State::Unhealthy(TimedOut(configuration.timeout.into())))
             } else {
                 Err(NetworkError {
                     message: format!("network error: {}", e)
