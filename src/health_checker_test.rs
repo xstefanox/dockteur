@@ -1,7 +1,7 @@
 use crate::health_checker::Reason::{StatusCode, Timeout};
 use crate::health_checker::State::Healthy;
 use crate::health_checker::State::Unhealthy;
-use crate::health_checker::{default, get_health, Configuration};
+use crate::health_checker::get_health;
 use assert2::{check, let_assert};
 use rand::Rng;
 use std::net::TcpListener;
@@ -9,6 +9,9 @@ use std::time::Duration;
 use http::Method;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
+use configuration::default;
+use crate::configuration;
+use crate::configuration::Configuration;
 
 #[tokio::test]
 async fn a_healthy_service_should_be_reported() {
@@ -77,7 +80,7 @@ async fn mock_server_health_with_delay(mock_server: &MockServer, status_code: u1
 }
 
 fn client_configuration(port: u16) -> Configuration {
-    client_configuration_with_timeout(port, default::TIMEOUT.as_millis() as u64)
+    client_configuration_with_timeout(port, configuration::default::TIMEOUT.as_millis() as u64)
 }
 
 fn client_configuration_with_status_code(port: u16, status_code: u16) -> Configuration {

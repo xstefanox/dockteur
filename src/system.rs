@@ -3,10 +3,11 @@
 mod test;
 
 use std::fmt::{Display, Formatter};
-use Reason::{StatusCode, Timeout};
-use State::{Healthy, Unhealthy};
-use crate::{InvalidConfiguration, State};
-use crate::health_checker::{HeathcheckFailure, Reason};
+use crate::health_checker::Reason::{StatusCode, Timeout};
+use crate::health_checker::State::{Healthy, Unhealthy};
+use crate::configuration::InvalidConfiguration;
+use crate::health_checker::State;
+use crate::health_checker::HeathcheckFailure;
 
 impl Display for State {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

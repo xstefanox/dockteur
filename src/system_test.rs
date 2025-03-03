@@ -1,10 +1,10 @@
 use rstest::rstest;
 use crate::ExitCode;
-use crate::health_checker::InvalidConfiguration;
 use crate::health_checker::Reason;
 use crate::health_checker::Reason::{Timeout, StatusCode};
-use crate::State::{Healthy, Unhealthy};
+use crate::health_checker::State::{Healthy, Unhealthy};
 use std::time::Duration;
+use crate::configuration::InvalidConfiguration;
 
 #[test]
 fn healthy_state_should_be_converted_to_process_exit_status() {

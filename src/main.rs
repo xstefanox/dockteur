@@ -3,14 +3,19 @@ extern crate core;
 use env_logger::Target;
 use log::LevelFilter;
 
-use crate::health_checker::{InvalidConfiguration, run_health_check, State};
+use crate::health_checker::run_health_check;
 use crate::system::ExitCode;
 
+mod configuration;
+
 mod health_checker;
+
 mod system;
 
 #[cfg(test)]
 mod test_logger;
+
+#[cfg(test)]
 mod test_macros;
 
 #[tokio::main]

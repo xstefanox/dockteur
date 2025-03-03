@@ -1,12 +1,33 @@
-use crate::health_checker::InvalidConfiguration;
 use crate::map;
 use assert2::{check, let_assert};
 use std::time::Duration;
 use http::Method;
+use crate::configuration::{sanitize, InvalidConfiguration};
+
+#[test]
+fn non_empty_string_sanitization() {
+    let result = sanitize("test");
+
+    assert_eq!(Some("test".to_string()), result)
+}
+
+#[test]
+fn empty_string_sanitization() {
+    let result = sanitize("");
+
+    assert_eq!(None, result)
+}
+
+#[test]
+fn blank_string_sanitization() {
+    let result = sanitize(" ");
+
+    assert_eq!(None, result)
+}
 
 #[test]
 fn service_method_should_be_read_from_environment_variable() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_METHOD" => "HEAD",
     });
 
@@ -16,7 +37,7 @@ fn service_method_should_be_read_from_environment_variable() {
 
 #[test]
 fn service_method_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {});
+    let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
     check!(configuration.method == Method::GET);
@@ -24,7 +45,7 @@ fn service_method_should_fallback_on_default() {
 
 #[test]
 fn empty_service_method_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_METHOD" => "",
     });
 
@@ -34,7 +55,7 @@ fn empty_service_method_should_fallback_on_default() {
 
 #[test]
 fn blank_service_method_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_METHOD" => " ",
     });
 
@@ -44,7 +65,7 @@ fn blank_service_method_should_fallback_on_default() {
 
 #[test]
 fn service_method_should_be_trimmed() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_METHOD" => " POST ",
     });
 
@@ -54,7 +75,7 @@ fn service_method_should_be_trimmed() {
 
 #[test]
 fn malformed_service_method_should_be_reported() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_METHOD" => "DO@SOMETHING",
     });
 
@@ -64,7 +85,7 @@ fn malformed_service_method_should_be_reported() {
 
 #[test]
 fn expected_status_code_should_be_read_from_environment_variable() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_STATUS_CODE" => "201",
     });
 
@@ -74,7 +95,7 @@ fn expected_status_code_should_be_read_from_environment_variable() {
 
 #[test]
 fn expected_status_code_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {});
+    let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
     check!(configuration.status_code == 200);
@@ -82,7 +103,7 @@ fn expected_status_code_should_fallback_on_default() {
 
 #[test]
 fn malformed_status_code_should_not_be_accepted() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_STATUS_CODE" => "MALFORMED",
     });
 
@@ -92,7 +113,7 @@ fn malformed_status_code_should_not_be_accepted() {
 
 #[test]
 fn empty_status_code_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_STATUS_CODE" => "",
     });
 
@@ -102,7 +123,7 @@ fn empty_status_code_should_fallback_on_default() {
 
 #[test]
 fn blank_status_code_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_STATUS_CODE" => " ",
     });
 
@@ -112,7 +133,7 @@ fn blank_status_code_should_fallback_on_default() {
 
 #[test]
 fn service_port_should_be_read_from_environment_variable() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_PORT" => "8080",
     });
 
@@ -122,7 +143,7 @@ fn service_port_should_be_read_from_environment_variable() {
 
 #[test]
 fn service_port_should_be_read_from_common_environment_variable() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "PORT" => "8080",
     });
 
@@ -132,7 +153,7 @@ fn service_port_should_be_read_from_common_environment_variable() {
 
 #[test]
 fn port_specific_variable_should_have_precedence_on_common_variable() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_PORT" => "8081",
         "PORT" => "8080",
     });
@@ -143,7 +164,7 @@ fn port_specific_variable_should_have_precedence_on_common_variable() {
 
 #[test]
 fn service_port_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {});
+    let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
     check!(configuration.port == 80);
@@ -151,7 +172,7 @@ fn service_port_should_fallback_on_default() {
 
 #[test]
 fn malformed_service_port_should_not_be_accepted() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "PORT" => "MALFORMED",
     });
 
@@ -161,7 +182,7 @@ fn malformed_service_port_should_not_be_accepted() {
 
 #[test]
 fn port_non_representable_in_16_bits_should_not_be_accepted() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "PORT" => "65536",
     });
 
@@ -171,7 +192,7 @@ fn port_non_representable_in_16_bits_should_not_be_accepted() {
 
 #[test]
 fn port_0_should_not_be_accepted() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "PORT" => "0",
     });
 
@@ -181,7 +202,7 @@ fn port_0_should_not_be_accepted() {
 
 #[test]
 fn empty_service_port_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_PORT" => "",
     });
 
@@ -191,7 +212,7 @@ fn empty_service_port_should_fallback_on_default() {
 
 #[test]
 fn blank_service_port_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_PORT" => " ",
     });
 
@@ -201,7 +222,7 @@ fn blank_service_port_should_fallback_on_default() {
 
 #[test]
 fn service_path_should_be_read_from_environment_variable() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_PATH" => "/this/is/the/path",
     });
 
@@ -211,7 +232,7 @@ fn service_path_should_be_read_from_environment_variable() {
 
 #[test]
 fn service_path_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {});
+    let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
     check!(configuration.path == "/");
@@ -219,7 +240,7 @@ fn service_path_should_fallback_on_default() {
 
 #[test]
 fn empty_service_path_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_PATH" => "",
     });
 
@@ -229,7 +250,7 @@ fn empty_service_path_should_fallback_on_default() {
 
 #[test]
 fn blank_service_path_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_PATH" => " ",
     });
 
@@ -239,7 +260,7 @@ fn blank_service_path_should_fallback_on_default() {
 
 #[test]
 fn service_path_should_be_trimmed() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_PATH" => " /this/is/the/path ",
     });
 
@@ -249,7 +270,7 @@ fn service_path_should_be_trimmed() {
 
 #[test]
 fn timeout_should_be_read_from_environment_variable() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_TIMEOUT_MILLIS" => "100",
     });
 
@@ -259,7 +280,7 @@ fn timeout_should_be_read_from_environment_variable() {
 
 #[test]
 fn timeout_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {});
+    let result = crate::configuration::load_configuration_from(map! {});
 
     let_assert!(Ok(configuration) = result);
     check!(configuration.timeout == Duration::from_millis(500));
@@ -267,7 +288,7 @@ fn timeout_should_fallback_on_default() {
 
 #[test]
 fn malformed_timeout_port_should_not_be_accepted() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_TIMEOUT_MILLIS" => "MALFORMED",
     });
 
@@ -277,7 +298,7 @@ fn malformed_timeout_port_should_not_be_accepted() {
 
 #[test]
 fn empty_timeout_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_TIMEOUT_MILLIS" => "",
     });
 
@@ -287,7 +308,7 @@ fn empty_timeout_should_fallback_on_default() {
 
 #[test]
 fn blank_timeout_should_fallback_on_default() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_TIMEOUT_MILLIS" => " ",
     });
 
@@ -297,7 +318,7 @@ fn blank_timeout_should_fallback_on_default() {
 
 #[test]
 fn timeout_should_be_trimmed() {
-    let result = crate::health_checker::load_configuration_from(map! {
+    let result = crate::configuration::load_configuration_from(map! {
         "DOCKTEUR_TIMEOUT_MILLIS" => " 100 ",
     });
 
