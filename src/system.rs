@@ -3,10 +3,11 @@
 mod test;
 
 use std::fmt::{Display, Formatter};
-use crate::health_checker::Reason::{UnexpectedStatusCode, TimedOut};
+use Reason::Description;
+use crate::health_checker::Reason::TimedOut;
 use crate::health_checker::State::{Healthy, Unhealthy};
 use crate::configuration::InvalidConfiguration;
-use crate::health_checker::State;
+use crate::health_checker::{Reason, State};
 use crate::health_checker::HeathcheckFailure;
 
 impl Display for State {
@@ -17,10 +18,8 @@ impl Display for State {
                 write!(f, "unhealthy: ")?;
 
                 match reason {
-                    UnexpectedStatusCode(value, text) => write!(f, "status code {value} {text}"),
-                    TimedOut(value) => {
-                        write!(f, "timed out after {value:?}")
-                    },
+                    Description(value) => write!(f, "{value}"),
+                    TimedOut(value) => write!(f, "timed out after {value:?}"),
                 }
             }
         }
