@@ -1,5 +1,5 @@
 use crate::configuration::Configuration;
-use crate::health_checker::Reason::{TimedOut, UnexpectedStatusCode};
+use crate::health_checker::Reason::{Other, Timeout};
 use crate::health_checker::{HealthCheck, NetworkError, State};
 use log::{debug, error, info};
 use reqwest::Client;
@@ -35,16 +35,13 @@ impl HealthCheck for Http {
                 if value.status() == configuration.status_code {
                     Ok(State::Healthy)
                 } else {
-                    let reason = value.status().canonical_reason().unwrap_or("").to_string();
-                    Ok(State::Unhealthy(UnexpectedStatusCode(
-                        value.status().as_u16(),
-                        reason,
-                    )))
+                    let content = format!("unexpected status code '{}'", value.status());
+                    Ok(State::Unhealthy(Other(content)))
                 }
             }
             Err(e) => {
                 if e.is_timeout() {
-                    Ok(State::Unhealthy(TimedOut(configuration.timeout.into())))
+                    Ok(State::Unhealthy(Timeout(configuration.timeout.into())))
                 } else {
                     Err(NetworkError {
                         message: format!("network error: {}", e),
