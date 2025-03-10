@@ -16,7 +16,7 @@ pub(crate) enum State {
 #[derive(Debug, PartialEq)]
 pub(crate) enum Reason {
     TimedOut(Duration),
-    UnexpectedStatusCode(u16, String),
+    Description(String),
 }
 
 #[derive(Debug, PartialEq)]

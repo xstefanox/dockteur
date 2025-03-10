@@ -1,4 +1,4 @@
-use crate::health_checker::Reason::{UnexpectedStatusCode, TimedOut};
+use crate::health_checker::Reason::{TimedOut, Description};
 use crate::health_checker::State::Healthy;
 use crate::health_checker::State::Unhealthy;
 use assert2::{check, let_assert};
@@ -33,7 +33,7 @@ async fn an_unhealthy_service_should_be_reported() {
     let result = Http{}.get_health(&configuration).await;
 
     let_assert!(Ok(state) = result);
-    check!(state == Unhealthy(UnexpectedStatusCode(500, "Internal Server Error".to_string())));
+    check!(state == Unhealthy(Description("unexpected status code '500 Internal Server Error'".to_string())));
 }
 
 #[tokio::test]
