@@ -26,7 +26,7 @@ fn unhealthy_state_should_be_converted_to_process_exit_status(#[case] reason: Re
 fn invalid_port_message() {
     let err = InvalidConfiguration::Port(String::from("MALFORMED"));
 
-    let result = format!("{}", err);
+    let result = format!("{err}");
 
     assert_eq!("invalid port 'MALFORMED'", result)
 }
@@ -35,7 +35,7 @@ fn invalid_port_message() {
 fn invalid_timeout_message() {
     let err = InvalidConfiguration::Timeout(String::from("MALFORMED"));
 
-    let result = format!("{}", err);
+    let result = format!("{err}");
 
     assert_eq!("invalid timeout 'MALFORMED'", result)
 }
@@ -44,7 +44,7 @@ fn invalid_timeout_message() {
 fn invalid_status_code_message() {
     let err = InvalidConfiguration::StatusCode(String::from("MALFORMED"));
 
-    let result = format!("{}", err);
+    let result = format!("{err}");
 
     assert_eq!("invalid status code 'MALFORMED'", result)
 }
@@ -53,7 +53,7 @@ fn invalid_status_code_message() {
 fn invalid_method_message() {
     let err = InvalidConfiguration::Method(String::from("MALFORMED"));
 
-    let result = format!("{}", err);
+    let result = format!("{err}");
 
     assert_eq!("invalid method 'MALFORMED'", result)
 }

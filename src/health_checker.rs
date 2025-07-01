@@ -50,7 +50,7 @@ async fn get_health(configuration: &Configuration) -> Result<State, NetworkError
         .send()
         .await;
 
-    debug!("received result from {}: {:?}", url, response);
+    debug!("received result from {url}: {response:?}");
 
     let result: Result<State, NetworkError> = match response {
         Ok(value) => {
@@ -70,14 +70,14 @@ async fn get_health(configuration: &Configuration) -> Result<State, NetworkError
                 Ok(State::Unhealthy(TimedOut(configuration.timeout.into())))
             } else {
                 Err(NetworkError {
-                    message: format!("network error: {}", e)
+                    message: format!("network error: {e}"),
                 })
             }
         }
     };
 
     match &result {
-        Ok(state) => info!("state {}", state),
+        Ok(state) => info!("state {state}"),
         Err(failure) => error!("{}", failure.message),
     }
 
