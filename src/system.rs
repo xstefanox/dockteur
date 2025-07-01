@@ -17,9 +17,9 @@ impl Display for State {
                 write!(f, "unhealthy: ")?;
 
                 match reason {
-                    UnexpectedStatusCode(value, text) => write!(f, "status code {} {}", value, text),
+                    UnexpectedStatusCode(value, text) => write!(f, "status code {value} {text}"),
                     TimedOut(value) => {
-                        write!(f, "timed out after {:?}", value)
+                        write!(f, "timed out after {value:?}")
                     },
                 }
             }
@@ -30,10 +30,10 @@ impl Display for State {
 impl Display for InvalidConfiguration {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            InvalidConfiguration::Port(value) => write!(f, "invalid port '{}'", value),
-            InvalidConfiguration::Timeout(value) => write!(f, "invalid timeout '{}'", value),
-            InvalidConfiguration::StatusCode(value) => write!(f, "invalid status code '{}'", value),
-            InvalidConfiguration::Method(value) =>  write!(f, "invalid method '{}'", value),
+            InvalidConfiguration::Port(value) => write!(f, "invalid port '{value}'"),
+            InvalidConfiguration::Timeout(value) => write!(f, "invalid timeout '{value}'"),
+            InvalidConfiguration::StatusCode(value) => write!(f, "invalid status code '{value}'"),
+            InvalidConfiguration::Method(value) =>  write!(f, "invalid method '{value}'"),
         }
     }
 }
