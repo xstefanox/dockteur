@@ -5,11 +5,22 @@ use assert2::{check, let_assert};
 use rand::Rng;
 use std::net::TcpListener;
 use std::time::Duration;
+use testcontainers_modules::testcontainers::runners::AsyncRunner;
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 use crate::configuration::fixtures::{a_configuration, a_configuration_with_status_code, a_configuration_with_timeout};
 use crate::health_checker::http::Http;
 use crate::health_checker::HealthCheck;
+use crate::health_checker::http::test::toxiproxy::{Proxy, ToxiProxyContainer, Upstream};
+use crate::health_checker::http::test::whoami::WhoamiContainer;
+
+#[cfg(test)]
+#[path = "toxiproxy.rs"]
+mod toxiproxy;
+
+#[cfg(test)]
+#[path = "whoami.rs"]
+mod whoami;
 
 #[tokio::test]
 async fn a_healthy_service_should_be_reported() {
@@ -38,9 +49,23 @@ async fn an_unhealthy_service_should_be_reported() {
 
 #[tokio::test]
 async fn service_responding_slowly_should_be_reported_as_unhealthy() {
+    let whoami = WhoamiContainer::default().start().await.unwrap();
+
+
+    let p = whoami.get_host_port_ipv4(80).await.unwrap();
+
     let mock_server = MockServer::start().await;
     let configuration = a_configuration_with_timeout(mock_server.address().port(), 1);
     mock_server_health_with_delay(&mock_server, 500, 1_000).await;
+    let toxiproxy_container = ToxiProxyContainer::with(Proxy {
+        name: "http-server".into(),
+        port: mock_server.address().port(),
+        upstream: Upstream {
+            host: "localhost".into(),
+            port: 123,
+        },
+        latency: Duration::from_secs(1),
+    }).await.unwrap();
 
     let result = Http{}.get_health(&configuration).await;
 

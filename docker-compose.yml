@@ -1,0 +1,14 @@
+# TODO remove
+
+services:
+
+  whoami:
+    image: traefik/whoami:v1.10
+    ports:
+      - "0:80"
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.11.0
+    ports:
+      - "0:8474"
+      - "0:9001"
