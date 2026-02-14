@@ -3,7 +3,7 @@ use crate::health_checker::State::Healthy;
 use crate::health_checker::State::Unhealthy;
 use crate::health_checker::get_health;
 use assert2::{check, let_assert};
-use rand::Rng;
+use rand::RngExt;
 use std::net::TcpListener;
 use std::time::Duration;
 use wiremock::matchers::{method, path};
