@@ -2,7 +2,7 @@ use crate::health_checker::Reason::{UnexpectedStatusCode, TimedOut};
 use crate::health_checker::State::Healthy;
 use crate::health_checker::State::Unhealthy;
 use crate::health_checker::get_health;
-use assert2::{check, let_assert};
+use assert2::{check, assert};
 use rand::RngExt;
 use std::net::TcpListener;
 use std::time::Duration;
@@ -19,7 +19,7 @@ async fn a_healthy_service_should_be_reported() {
 
     let result = get_health(&configuration).await;
 
-    let_assert!(Ok(state) = result);
+    assert!(let Ok(state) = result);
     check!(state == Healthy);
 }
 
@@ -31,7 +31,7 @@ async fn an_unhealthy_service_should_be_reported() {
 
     let result = get_health(&configuration).await;
 
-    let_assert!(Ok(state) = result);
+    assert!(let Ok(state) = result);
     check!(state == Unhealthy(UnexpectedStatusCode(500, "Internal Server Error".to_string())));
 }
 
@@ -43,7 +43,7 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
 
     let result = get_health(&configuration).await;
 
-    let_assert!(Ok(state) = result);
+    assert!(let Ok(state) = result);
     check!(state == Unhealthy(TimedOut(Duration::from_millis(1))));
 }
 
@@ -56,7 +56,7 @@ async fn on_network_error_the_service_should_be_reported_as_error() {
 
     let result = get_health(&configuration).await;
 
-    let_assert!(Err(error) = result);
+    assert!(let Err(error) = result);
     check!(error.message.starts_with("network error"));
 }
 
