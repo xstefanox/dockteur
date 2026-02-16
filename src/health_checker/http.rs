@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use crate::configuration::Configuration;
 use crate::health_checker::Reason::{Other, Timeout};
 use crate::health_checker::{HealthCheck, NetworkError, State};
@@ -11,6 +12,7 @@ mod test;
 
 pub(crate) struct Http;
 
+#[async_trait]
 impl HealthCheck for Http {
     async fn get_health(&self, configuration: &Configuration) -> Result<State, NetworkError> {
         let mut url = Url::parse("http://localhost").unwrap();

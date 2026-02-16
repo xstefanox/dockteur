@@ -352,6 +352,7 @@ name = "dockteur"
 version = "0.0.0"
 dependencies = [
  "assert2",
+ "async-trait",
  "ctor",
  "env_logger",
  "http",

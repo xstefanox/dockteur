@@ -99,8 +99,31 @@ impl Default for StatusCode {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub(crate) enum Protocol {
+    Http,
+}
+
+impl Default for Protocol {
+    fn default() -> Self {
+        Protocol::Http
+    }
+}
+
+impl FromStr for Protocol {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "http" => Ok(Protocol::Http),
+            _ => Err(()),
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub(crate) struct Configuration {
+    pub(crate) protocol: Protocol,
     pub(crate) method: Method,
     pub(crate) port: Port,
     pub(crate) path: Path,
@@ -110,6 +133,7 @@ pub(crate) struct Configuration {
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum InvalidConfiguration {
+    Protocol(String),
     Port(String),
     Timeout(String),
     StatusCode(String),
@@ -126,6 +150,17 @@ macro_rules! env {
 pub fn sanitize(value: &str) -> Option<String> {
     Some(value.trim().to_string())
         .filter(|s| !s.is_empty())
+}
+
+fn load_protocol_from(vars: &HashMap<String, String>) -> Result<Protocol, InvalidConfiguration> {
+    match vars.get(env!("PROTOCOL")) {
+        None => Ok(Protocol::default()),
+        Some(value) => match sanitize(value) {
+            None => Ok(Protocol::default()),
+            Some(value) => Protocol::from_str(&value)
+                .map_err(|_| InvalidConfiguration::Protocol(value)),
+        },
+    }
 }
 
 fn load_method_from(vars: &HashMap<String, String>) -> Result<Method, InvalidConfiguration> {
@@ -199,10 +234,11 @@ fn load_status_code_from(vars: &HashMap<String, String>) -> Result<StatusCode, I
 }
 
 pub(crate) fn load_configuration_from(vars: HashMap<String, String>) -> Result<Configuration, InvalidConfiguration> {
+    let protocol = load_protocol_from(&vars)?;
     let method = load_method_from(&vars)?;
     let port = load_port_from(&vars)?;
     let path = load_path_from(&vars)?;
     let timeout = load_timeout_from(&vars)?;
     let status_code = load_status_code_from(&vars)?;
-    Ok(Configuration { method, port, path, timeout, status_code })
+    Ok(Configuration { protocol, method, port, path, timeout, status_code })
 }

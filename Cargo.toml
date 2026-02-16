@@ -10,9 +10,11 @@ url = "2.5.2"
 reqwest = { version = "0.13.0", default-features = false }
 tokio = { version = "1.40.0", features = ["macros", "rt-multi-thread"] }
 http = "1.1.0"
+async-trait = "0.1.89"
 
 [dev-dependencies]
 assert2 = "0.3.15"
+async-trait = "0.1.89"
 ctor = "0.6.0"
 rand = "0.10.0"
 reqwest = { version = "0.13.0", default-features = false, features = ["json"] }

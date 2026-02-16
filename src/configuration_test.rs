@@ -2,7 +2,7 @@ use std::num::NonZeroU16;
 use crate::{map, u16nz};
 use assert2::{check, assert};
 use std::time::Duration;
-use crate::configuration::{sanitize, InvalidConfiguration, Method, Path, Port, StatusCode, Timeout};
+use crate::configuration::{sanitize, InvalidConfiguration, Method, Path, Port, Protocol, StatusCode, Timeout};
 
 #[test]
 fn non_empty_string_sanitization() {
@@ -343,6 +343,64 @@ fn timeout_should_be_trimmed() {
 
     assert!(let Ok(configuration) = result);
     check!(configuration.timeout == Timeout(Duration::from_millis(100)));
+}
+
+#[test]
+fn protocol_should_be_read_from_environment_variable() {
+    let result = crate::configuration::load_configuration_from(map! {
+        "DOCKTEUR_PROTOCOL" => "http",
+    });
+
+    assert!(let Ok(configuration) = result);
+    check!(configuration.protocol == Protocol::Http);
+}
+
+#[test]
+fn protocol_should_fallback_on_default() {
+    let result = crate::configuration::load_configuration_from(map! {});
+
+    assert!(let Ok(configuration) = result);
+    check!(configuration.protocol == Protocol::Http);
+}
+
+#[test]
+fn empty_protocol_should_fallback_on_default() {
+    let result = crate::configuration::load_configuration_from(map! {
+        "DOCKTEUR_PROTOCOL" => "",
+    });
+
+    assert!(let Ok(configuration) = result);
+    check!(configuration.protocol == Protocol::Http);
+}
+
+#[test]
+fn blank_protocol_should_fallback_on_default() {
+    let result = crate::configuration::load_configuration_from(map! {
+        "DOCKTEUR_PROTOCOL" => " ",
+    });
+
+    assert!(let Ok(configuration) = result);
+    check!(configuration.protocol == Protocol::Http);
+}
+
+#[test]
+fn protocol_should_be_trimmed() {
+    let result = crate::configuration::load_configuration_from(map! {
+        "DOCKTEUR_PROTOCOL" => " http ",
+    });
+
+    assert!(let Ok(configuration) = result);
+    check!(configuration.protocol == Protocol::Http);
+}
+
+#[test]
+fn malformed_protocol_should_be_reported() {
+    let result = crate::configuration::load_configuration_from(map! {
+        "DOCKTEUR_PROTOCOL" => "ftp",
+    });
+
+    assert!(let Err(error) = result);
+    check!(error == InvalidConfiguration::Protocol("ftp".to_string()));
 }
 
 impl From<&str> for Path {

@@ -29,6 +29,7 @@ impl Display for State {
 impl Display for InvalidConfiguration {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            InvalidConfiguration::Protocol(value) => write!(f, "invalid protocol '{value}'"),
             InvalidConfiguration::Port(value) => write!(f, "invalid port '{value}'"),
             InvalidConfiguration::Timeout(value) => write!(f, "invalid timeout '{value}'"),
             InvalidConfiguration::StatusCode(value) => write!(f, "invalid status code '{value}'"),

@@ -57,3 +57,12 @@ fn invalid_method_message() {
 
     assert_eq!("invalid method 'MALFORMED'", result)
 }
+
+#[test]
+fn invalid_protocol_message() {
+    let err = InvalidConfiguration::Protocol(String::from("ftp"));
+
+    let result = format!("{err}");
+
+    assert_eq!("invalid protocol 'ftp'", result)
+}
