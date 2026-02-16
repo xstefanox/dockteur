@@ -103,6 +103,7 @@ impl Default for StatusCode {
 pub(crate) enum Protocol {
     #[default]
     Http,
+    Redis,
 }
 
 impl FromStr for Protocol {
@@ -111,6 +112,7 @@ impl FromStr for Protocol {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "http" => Ok(Protocol::Http),
+            "redis" => Ok(Protocol::Redis),
             _ => Err(()),
         }
     }
@@ -170,18 +172,26 @@ fn load_method_from(vars: &HashMap<String, String>) -> Result<Method, InvalidCon
     }
 }
 
-fn load_port_from(vars: &HashMap<String, String>) -> Result<Port, InvalidConfiguration> {
+fn default_port_for(protocol: &Protocol) -> Port {
+    let value = match protocol {
+        Protocol::Http => 80,
+        Protocol::Redis => 6379,
+    };
+    Port(NonZeroU16::new(value).unwrap())
+}
+
+fn load_port_from(vars: &HashMap<String, String>, protocol: &Protocol) -> Result<Port, InvalidConfiguration> {
     let env_var = vars.get(env!("PORT"))
         .or(vars.get("PORT"));
 
     match env_var {
-        None => Ok(Port::default()),
+        None => Ok(default_port_for(protocol)),
         Some(value) => match sanitize(value) {
-            None => Ok(Port::default()),
+            None => Ok(default_port_for(protocol)),
             Some(value) => match value.parse::<u16>() {
                 Ok(number) => match NonZeroU16::new(number) {
                     None => Err(InvalidConfiguration::Port(value.clone())),
-                    Some(_) => Ok(Port(NonZeroU16::new(number).unwrap())),
+                    Some(nz) => Ok(Port(nz)),
                 },
                 Err(_) => Err(InvalidConfiguration::Port(value.clone())),
             }
@@ -231,7 +241,7 @@ fn load_status_code_from(vars: &HashMap<String, String>) -> Result<StatusCode, I
 pub(crate) fn load_configuration_from(vars: HashMap<String, String>) -> Result<Configuration, InvalidConfiguration> {
     let protocol = load_protocol_from(&vars)?;
     let method = load_method_from(&vars)?;
-    let port = load_port_from(&vars)?;
+    let port = load_port_from(&vars, &protocol)?;
     let path = load_path_from(&vars)?;
     let timeout = load_timeout_from(&vars)?;
     let status_code = load_status_code_from(&vars)?;

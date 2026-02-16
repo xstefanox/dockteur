@@ -403,6 +403,36 @@ fn malformed_protocol_should_be_reported() {
     check!(error == InvalidConfiguration::Protocol("ftp".to_string()));
 }
 
+#[test]
+fn protocol_redis_should_be_read_from_environment_variable() {
+    let result = crate::configuration::load_configuration_from(map! {
+        "DOCKTEUR_PROTOCOL" => "redis",
+    });
+
+    assert!(let Ok(configuration) = result);
+    check!(configuration.protocol == Protocol::Redis);
+}
+
+#[test]
+fn http_protocol_should_use_default_http_port() {
+    let result = crate::configuration::load_configuration_from(map! {
+        "DOCKTEUR_PROTOCOL" => "http",
+    });
+
+    assert!(let Ok(configuration) = result);
+    check!(configuration.port == Port(u16nz!(80)));
+}
+
+#[test]
+fn redis_protocol_should_use_default_redis_port() {
+    let result = crate::configuration::load_configuration_from(map! {
+        "DOCKTEUR_PROTOCOL" => "redis",
+    });
+
+    assert!(let Ok(configuration) = result);
+    check!(configuration.port == Port(u16nz!(6379)));
+}
+
 impl From<&str> for Path {
     fn from(value: &str) -> Self {
         Path(String::from(value))

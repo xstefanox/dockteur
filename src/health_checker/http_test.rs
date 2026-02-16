@@ -12,16 +12,8 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 use crate::configuration::fixtures::{a_configuration, a_configuration_with_status_code, a_configuration_with_timeout};
 use crate::health_checker::http::Http;
 use crate::health_checker::HealthCheck;
-use crate::health_checker::http::test::toxiproxy::{ToxiProxyContainer, PROXY_PORT};
-use crate::health_checker::http::test::whoami::WhoamiContainer;
-
-#[cfg(test)]
-#[path = "toxiproxy.rs"]
-mod toxiproxy;
-
-#[cfg(test)]
-#[path = "whoami.rs"]
-mod whoami;
+use crate::health_checker::toxiproxy::{ToxiProxyContainer, PROXY_PORT};
+use crate::health_checker::whoami::WhoamiContainer;
 
 #[tokio::test]
 async fn a_healthy_service_should_be_reported() {

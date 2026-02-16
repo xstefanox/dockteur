@@ -11,6 +11,7 @@ reqwest = { version = "0.13.0", default-features = false }
 tokio = { version = "1.40.0", features = ["macros", "rt-multi-thread"] }
 http = "1.1.0"
 async-trait = "0.1.89"
+redis = { version = "1.0.3", default-features = false, features = ["tokio-comp"] }
 
 [dev-dependencies]
 assert2 = "0.3.15"

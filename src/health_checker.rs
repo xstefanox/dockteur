@@ -6,8 +6,17 @@ use crate::configuration;
 use crate::configuration::Configuration;
 use crate::configuration::Protocol;
 use crate::health_checker::http::Http;
+use crate::health_checker::redis::Redis;
 
 pub(crate) mod http;
+
+pub(crate) mod redis;
+
+#[cfg(test)]
+pub(crate) mod toxiproxy;
+
+#[cfg(test)]
+pub(crate) mod whoami;
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum State {
@@ -48,6 +57,7 @@ pub async fn run_health_check() -> Result<State, HeathcheckFailure> {
 
     let checker: Box<dyn HealthCheck> = match configuration.protocol {
         Protocol::Http => Box::new(Http),
+        Protocol::Redis => Box::new(Redis),
     };
 
     checker.get_health(&configuration).await.map_err(|err| {

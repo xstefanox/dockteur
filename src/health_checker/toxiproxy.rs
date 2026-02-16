@@ -1,4 +1,4 @@
-use crate::health_checker::http::test::toxiproxy::default::ADMIN_PORT;
+use default::ADMIN_PORT;
 use assert2::check;
 use http::StatusCode;
 use serde::Serialize;
