@@ -10,3 +10,14 @@ repos:
     rev: v3.29.0
     hooks:
       - id: commitizen
+
+  - repo: local
+    hooks:
+
+      - id: clippy
+        name: "Static code analysis"
+        entry: cargo clippy --all-targets --all-features -- -D warnings
+        language: system
+        fail_fast: true
+        pass_filenames: false
+        stages: [ pre-commit ]
