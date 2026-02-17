@@ -21,7 +21,7 @@ rand = "0.10.0"
 reqwest = { version = "0.13.0", default-features = false, features = ["json"] }
 rstest = "0.26.0"
 serde = { version = "1.0.219", default-features = false, features = ["derive"] }
-testcontainers-modules = { version = "0.11.6", default-features = false, features = ["redis"] }
+testcontainers-modules = { version = "0.14.0", default-features = false, features = ["redis"] }
 wiremock = "0.6.0"
 
 [profile.release]
