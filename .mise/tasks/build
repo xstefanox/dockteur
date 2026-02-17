@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+#MISE description="Build Docker images"
+
+set -euo pipefail
+
+BUILDER_NAME="dockteur-builder"
+KEEP_BUILDER="${KEEP_BUILDER:-false}"
+OUTPUT="${OUTPUT:---load}"
+
+cleanup() {
+    docker compose down
+    if [[ "${KEEP_BUILDER}" != "true" ]]; then
+        docker buildx rm "${BUILDER_NAME}" 2>/dev/null || true
+    fi
+}
+
+trap cleanup EXIT
+
+if ! docker buildx inspect "${BUILDER_NAME}" &>/dev/null; then
+    docker buildx create --name "${BUILDER_NAME}" --driver docker-container --driver-opt network=host --buildkitd-flags '--allow-insecure-entitlement network.host'
+fi
+
+export BASE_IMAGE_NAME="${BASE_IMAGE_NAME:-dockteur}"
+
+docker compose up -d socat
+SOCAT_PORT=$(docker compose port socat 2375 | cut -d: -f2)
+
+DOCKER_HOST="tcp://localhost:${SOCAT_PORT}" docker buildx bake \
+    --builder "${BUILDER_NAME}" \
+    --allow network.host \
+    ${OUTPUT} \
+    -f docker-bake.hcl \
+    "$@" \
+    default alpine

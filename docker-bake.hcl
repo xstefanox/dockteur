@@ -2,8 +2,17 @@ variable "BASE_IMAGE_NAME" {
   default = ""
 }
 
+variable "DOCKER_HOST" {
+  default = ""
+}
+
 target "default" {
   target = "default"
+  network = "host"
+  entitlements = ["network.host"]
+  args = {
+    DOCKER_HOST = "${DOCKER_HOST}"
+  }
   tags = [
     "${BASE_IMAGE_NAME}-default",
   ]
@@ -17,6 +26,11 @@ target "default" {
 
 target "alpine" {
   target = "alpine"
+  network = "host"
+  entitlements = ["network.host"]
+  args = {
+    DOCKER_HOST = "${DOCKER_HOST}"
+  }
   tags = [
     "${BASE_IMAGE_NAME}-alpine",
   ]

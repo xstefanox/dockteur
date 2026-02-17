@@ -6,6 +6,7 @@ WORKDIR /opt/dockteur
 COPY --chown=nobody . ./
 RUN cargo build
 RUN cargo clippy --all-targets --all-features -- -D warnings
+ARG DOCKER_HOST
 RUN cargo test
 RUN cargo build --release
 RUN upx --best --lzma target/release/dockteur
@@ -18,6 +19,7 @@ WORKDIR /opt/dockteur
 COPY --chown=nobody . ./
 RUN cargo build
 RUN cargo clippy --all-targets --all-features -- -D warnings
+ARG DOCKER_HOST
 RUN cargo test
 RUN cargo build --release
 RUN upx --best --lzma target/release/dockteur
