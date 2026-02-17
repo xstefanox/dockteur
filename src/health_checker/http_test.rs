@@ -53,14 +53,14 @@ async fn service_responding_slowly_should_be_reported_as_unhealthy() {
     let network = "dockteur-test-network";
     let whoami_name = "whoami-service";
 
-    let _whoami = WhoamiContainer::default()
+    let _whoami = WhoamiContainer
         .with_network(network)
         .with_container_name(whoami_name)
         .start()
         .await
         .unwrap();
 
-    let toxiproxy = ToxiProxyContainer::default()
+    let toxiproxy = ToxiProxyContainer
         .with_network(network)
         .start()
         .await

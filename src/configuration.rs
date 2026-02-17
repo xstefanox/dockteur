@@ -99,15 +99,10 @@ impl Default for StatusCode {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash)]
 pub(crate) enum Protocol {
+    #[default]
     Http,
-}
-
-impl Default for Protocol {
-    fn default() -> Self {
-        Protocol::Http
-    }
 }
 
 impl FromStr for Protocol {
