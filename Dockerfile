@@ -1,28 +1,61 @@
 FROM rust:1.93-slim-trixie AS default-builder
-RUN apt-get update && apt-get install -y upx-ucl
+SHELL ["/bin/sh", "-ec"]
+RUN <<EOF
+  apt-get update
+  apt-get install -y upx-ucl
+EOF
 RUN rustup component add clippy
 USER nobody
 WORKDIR /opt/dockteur
+
+COPY --chown=nobody Cargo.toml Cargo.lock ./
+RUN <<EOF
+  mkdir src
+  echo 'fn main() {}' > src/main.rs
+  cargo build
+  cargo build --release
+  cargo test --no-run
+  rm -rf target/*/deps/dockteur-* target/*/dockteur* target/*/.fingerprint/dockteur-*
+EOF
+
 COPY --chown=nobody . ./
 RUN cargo build
 RUN cargo clippy --all-targets --all-features -- -D warnings
 ARG DOCKER_HOST
 RUN cargo test
-RUN cargo build --release
-RUN upx --best --lzma target/release/dockteur
+RUN <<EOF
+  cargo build --release
+  upx --best --lzma target/release/dockteur
+EOF
 
 FROM rust:1.93-alpine3.22 AS alpine-builder
-RUN apk add upx musl-dev
+SHELL ["/bin/sh", "-ec"]
+RUN <<EOF
+  apk add upx musl-dev
+EOF
 RUN rustup component add clippy
 USER nobody
 WORKDIR /opt/dockteur
+
+COPY --chown=nobody Cargo.toml Cargo.lock ./
+RUN <<EOF
+  mkdir src
+  echo 'fn main() {}' > src/main.rs
+  cargo build
+  cargo build --release
+  cargo test --no-run
+  rm -rf target/*/deps/dockteur-* target/*/dockteur* target/*/.fingerprint/dockteur-*
+EOF
+
 COPY --chown=nobody . ./
 RUN cargo build
 RUN cargo clippy --all-targets --all-features -- -D warnings
 ARG DOCKER_HOST
 RUN cargo test
-RUN cargo build --release
-RUN upx --best --lzma target/release/dockteur
+RUN <<EOF
+  cargo build --release
+  upx --best --lzma target/release/dockteur
+EOF
 
 FROM scratch AS default
 COPY --from=default-builder /opt/dockteur/target/release/dockteur /dockteur
