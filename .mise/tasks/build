@@ -6,6 +6,7 @@ set -euo pipefail
 BUILDER_NAME="dockteur-builder"
 KEEP_BUILDER="${KEEP_BUILDER:-false}"
 OUTPUT="${OUTPUT:---load}"
+TARGETS="${TARGETS:-default alpine}"
 
 cleanup() {
     docker compose down
@@ -31,4 +32,4 @@ DOCKER_HOST="tcp://localhost:${SOCAT_PORT}" docker buildx bake \
     ${OUTPUT} \
     -f docker-bake.hcl \
     "$@" \
-    default alpine
+    ${TARGETS}
