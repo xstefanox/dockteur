@@ -18,7 +18,7 @@ RUN <<EOF
   rm -rf target/*/deps/dockteur-* target/*/dockteur* target/*/.fingerprint/dockteur-*
 EOF
 
-COPY --chown=nobody . ./
+COPY --chown=nobody src ./src
 RUN cargo build
 RUN cargo clippy --all-targets --all-features -- -D warnings
 ARG DOCKER_HOST
@@ -47,7 +47,7 @@ RUN <<EOF
   rm -rf target/*/deps/dockteur-* target/*/dockteur* target/*/.fingerprint/dockteur-*
 EOF
 
-COPY --chown=nobody . ./
+COPY --chown=nobody src ./src
 RUN cargo build
 RUN cargo clippy --all-targets --all-features -- -D warnings
 ARG DOCKER_HOST
