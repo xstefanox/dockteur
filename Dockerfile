@@ -1,4 +1,4 @@
-FROM rust:1.93-slim-trixie AS default-builder
+FROM rust:1.93.1-slim-trixie AS default-builder
 SHELL ["/bin/sh", "-ec"]
 RUN <<EOF
   apt-get update
@@ -28,7 +28,7 @@ RUN <<EOF
   upx --best --lzma target/release/dockteur
 EOF
 
-FROM rust:1.93-alpine3.22 AS alpine-builder
+FROM rust:1.93.1-alpine3.22 AS alpine-builder
 SHELL ["/bin/sh", "-ec"]
 RUN <<EOF
   apk add upx musl-dev
