@@ -1,7 +1,8 @@
+use ctor::ctor;
 #[allow(unused_imports)]
 use log::LevelFilter;
 
-#[ctor::ctor]
+#[ctor(unsafe)]
 fn initialise() {
     let _ = env_logger::builder()
         .is_test(true)
